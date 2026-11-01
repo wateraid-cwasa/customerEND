@@ -22,6 +22,17 @@ export type BillDetail = {
   meterNo: string | null;
   holderName: string | null;
   address: string | null;
+  addressLines: string[];
+  accountNo: string | null;
+  category: string | null;
+  areaName: string | null;
+  connectionSize: string | null;
+  meterReaderCode: string | null;
+  previousReadingDate: string | null;
+  currentReadingDate: string | null;
+  consumptionDays: number | null;
+  billingMonth: number | null;
+  billingYear: number | null;
   wardNo: string | null;
   contactNo: string | null;
   additionalCharge: number;
@@ -161,6 +172,17 @@ export function normaliseBill(raw: unknown): BillDetail | null {
     meterNo: pickString(bill, ['meterNo']) ?? pickString(reading, ['meterNo']),
     holderName: pickString(bill, ['accountHolderName']),
     address: [line1, line2].filter(Boolean).join(', ') || null,
+    addressLines: [line1, line2].filter((line): line is string => Boolean(line)),
+    accountNo: pickText(bill, ['accountNo', 'accountNumber']),
+    category: pickString(bill, ['category']),
+    areaName: pickText(bill, ['areaName', 'accountAreaName', 'area']),
+    connectionSize: pickText(bill, ['connectionSize', 'connectionSizeInch', 'accountConnectionSize', 'wconsize', 'WCONSIZE', 'wConSize', 'accountWconsize']),
+    meterReaderCode: pickText(bill, ['meterReaderCode']),
+    previousReadingDate: pickString(bill, ['previousMeterReadingDate']),
+    currentReadingDate: pickString(bill, ['currentMeterReadingDate']),
+    consumptionDays: firstNumber(bill, ['consumptionDays']),
+    billingMonth: firstNumber(bill, ['billingMonth']),
+    billingYear: firstNumber(bill, ['billingYear']),
     wardNo: pickText(bill, ['accountWardNo']),
     contactNo: pickText(bill, ['accountContactNo']),
     additionalCharge,

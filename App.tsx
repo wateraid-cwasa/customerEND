@@ -200,6 +200,7 @@ export default function App() {
   const [smsFallback, setSmsFallback] = useState(true);
   const [billFilter, setBillFilter] = useState<'due' | 'paid'>('due');
   const [expandedHistoryBillId, setExpandedHistoryBillId] = useState<string | null>(null);
+  const [pdfBusyId, setPdfBusyId] = useState<string | null>(null);
   const [billCardShowingDetails, setBillCardShowingDetails] = useState(false);
   const [profileEditing, setProfileEditing] = useState(false);
   const [applicationStage, setApplicationStage] = useState(2);
@@ -561,6 +562,35 @@ export default function App() {
     showNotice(`${translateGuest(language, 'complaintReceived')}: ${complaint.reference}`);
   };
 
+  // Builds the bill PDF from the CWASA template and saves it as "<bill number>.pdf" (web) or opens the share sheet (phones).
+  const downloadBill = async (bill: BillDetail) => {
+    if (pdfBusyId) return;
+    setPdfBusyId(bill.id);
+    try {
+      // Loaded on demand so the PDF code does not slow down the app start.
+      const [{ downloadBillPdf }, { billPdfFileName }] = await Promise.all([import('./billPdfFile'), import('./billPdf')]);
+      const result = await downloadBillPdf(bill, {
+        accountNo: profile?.accountNo ?? customerSession?.accountNo ?? null,
+        customerName: profile?.customerName ?? null,
+        address: profile?.address ?? null,
+        mobileNo: profile?.mobileNo ?? null,
+        meterNo: profile?.meterNo ?? null,
+        wardNo: profile?.wardNo ?? null,
+        connectionSize: profile?.connectionSize ?? null,
+        category: profile?.propertyType ?? null,
+      });
+      if (result === 'downloaded') {
+        showNotice(language === 'bn' ? `${billPdfFileName(bill)} ডাউনলোড হয়েছে।` : `${billPdfFileName(bill)} downloaded.`);
+      }
+    } catch (error) {
+      console.error('Bill PDF failed:', error);
+      const reason = error instanceof Error && error.message ? ` (${error.message.slice(0, 120)})` : '';
+      showNotice((language === 'bn' ? 'পিডিএফ তৈরি করা যায়নি। আবার চেষ্টা করুন।' : 'Could not create the PDF. Please try again.') + reason);
+    } finally {
+      setPdfBusyId(null);
+    }
+  };
+
   const exportHistory = () => {
     if (Platform.OS !== 'web') {
       showNotice(language === 'bn' ? 'লেনদেনের ইতিহাস প্রস্তুত।' : 'Your transaction history is ready.');
@@ -734,7 +764,7 @@ export default function App() {
           <View>
             <View style={styles.separator} />
             <TextLabel bold>If paid late</TextLabel>
-            <TextLabel style={styles.helperText}>A late payment charge is added to the water charge, before VAT.</TextLabel>
+            <TextLabel style={styles.helperText}>A late payment charge, a percentage of the water charge, is added to the net payable.</TextLabel>
             {bill.surcharges.map((step) => {
               const current = overdue && formatBillDate(step.deadline) === formatBillDate(
                 bill.surcharges.find((item) => startOfDay(new Date(item.deadline)) >= startOfDay(new Date()))?.deadline
@@ -748,6 +778,16 @@ export default function App() {
             })}
           </View>
         ) : null}
+        <View style={styles.separator} />
+        <ActionButton
+          title={pdfBusyId === bill.id
+            ? (language === 'bn' ? 'তৈরি হচ্ছে...' : 'Preparing PDF...')
+            : (language === 'bn' ? 'পিডিএফ ডাউনলোড' : 'Download PDF')}
+          onPress={() => downloadBill(bill)}
+          disabled={pdfBusyId !== null}
+          secondary
+          fontFamily={font}
+        />
       </Card>
     );
   };
@@ -1095,6 +1135,7 @@ export default function App() {
                           <TextLabel bold>{formatTaka(paid ? bill.netPayable : amountPayableToday(bill))}</TextLabel>
                         </View>
                         <TextLabel style={styles.helperText}>{expanded ? 'Hide details ▲' : 'View details ▼'}</TextLabel>
+                        <LinkAction title={pdfBusyId === bill.id ? (language === 'bn' ? 'তৈরি হচ্ছে...' : 'Preparing PDF...') : (language === 'bn' ? 'পিডিএফ ডাউনলোড' : 'Download PDF')} onPress={() => downloadBill(bill)} />
                       </View>
                     </Card>
                   </Pressable>
