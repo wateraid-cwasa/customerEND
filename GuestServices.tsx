@@ -12,6 +12,7 @@ import * as Location from 'expo-location';
 import { colors, fontFamilyForText, sharedStyles } from './theme';
 import { Language } from './translation';
 import { GuestSection, GuestTranslationKey, translateGuest } from './guestTranslations';
+import WaterScheduleCard from './WaterScheduleCard';
 
 export type GuestComplaint = {
   name: string;
@@ -159,6 +160,7 @@ export default function GuestServices({
           {label(t('guestWelcome'), styles.heroTitle, true)}
           {label(t('guestDescription'), styles.heroDescription)}
         </View>
+        <WaterScheduleCard language={language} />
         <Pressable onPress={() => onNavigate('about')} style={styles.choiceCard}>
           <View style={[styles.choiceIcon, { backgroundColor: colors.paleBlue }]}>{label('i', styles.choiceIconBlue, true)}</View>
           <View style={styles.choiceContent}>{label(t('aboutUs'), styles.choiceTitle, true)}{label(t('aboutIntro'), styles.choiceDescription)}</View>

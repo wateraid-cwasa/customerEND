@@ -176,7 +176,7 @@ export function normaliseBill(raw: unknown): BillDetail | null {
     accountNo: pickText(bill, ['accountNo', 'accountNumber']),
     category: pickString(bill, ['category']),
     areaName: pickText(bill, ['areaName', 'accountAreaName', 'area']),
-    connectionSize: pickText(bill, ['connectionSize', 'connectionSizeInch', 'accountConnectionSize', 'wconsize', 'WCONSIZE', 'wConSize', 'accountWconsize']),
+    connectionSize: pickText(bill, ['connectionSizeCode', 'connectionSize', 'connectionSizeInch', 'accountConnectionSize', 'wconsize', 'WCONSIZE', 'wConSize', 'accountWconsize', 'accountSize', 'connection_size']),
     meterReaderCode: pickText(bill, ['meterReaderCode']),
     previousReadingDate: pickString(bill, ['previousMeterReadingDate']),
     currentReadingDate: pickString(bill, ['currentMeterReadingDate']),
@@ -253,4 +253,12 @@ export function amountPayableToday(bill: BillDetail, now = new Date()): number {
   const step = bill.surcharges.find((item) => startOfDay(new Date(item.deadline)) >= today)
     ?? bill.surcharges[bill.surcharges.length - 1];
   return step.totalPayable;
+}
+
+// The database column WCONSIZE holds only the number (for example 1 or 2). The bill prints it as "1 INCH".
+export function formatConnectionSize(value: string | null | undefined): string {
+  const text = (value ?? '').trim();
+  if (!text) return '-';
+  if (/^\d+(\.\d+)?$/.test(text)) return `${text} INCH`;
+  return text.toUpperCase();
 }

@@ -11,6 +11,7 @@ import {
 } from './billLogic';
 
 export type { BillDetail, SurchargeStep } from './billLogic';
+import { normaliseWaterSchedule, type WaterSchedule } from './waterSchedule';
 
 export const API_BASE_URL =
   process.env.EXPO_PUBLIC_API_BASE_URL ??
@@ -220,7 +221,7 @@ function normaliseProfile(raw: unknown): CustomerProfile {
     meterNo: pickText(profile, ['meterNo', 'meterNumber']),
     wardNo: pickText(profile, ['wardNo', 'ward']),
     propertyType: pickText(profile, ['propertyType', 'category']),
-    connectionSize: pickText(profile, ['connectionSize', 'connectionSizeInch']),
+    connectionSize: pickText(profile, ['connectionSizeCode', 'connectionSize', 'connectionSizeInch', 'wconsize', 'WCONSIZE', 'wConSize', 'accountConnectionSize', 'size']),
   };
 }
 
@@ -291,6 +292,16 @@ export async function getCustomerBills(): Promise<BillDetail[]> {
   }
   if (lastBillsNote) console.warn('[CWASA] /bill/customer', lastBillsNote, data);
   return bills;
+}
+
+// The schedule the water department has published. It is public, so no sign-in is needed.
+export async function getActiveWaterSchedule(): Promise<WaterSchedule | null> {
+  try {
+    return normaliseWaterSchedule(await rawRequest<unknown>('/water-schedule/active'));
+  } catch (error) {
+    if (error instanceof ApiRequestError && error.status === 404) return null;
+    throw error;
+  }
 }
 
 export function getLastBillsNote(): string {

@@ -21,6 +21,7 @@ import {
   billMonthLabel,
   billSortTime,
   formatBillDate,
+  formatConnectionSize,
   formatTaka,
   isPastDue,
   startOfDay,
@@ -29,6 +30,7 @@ import { colors, fontFamilyForText, openSansRegular, sharedStyles } from './them
 import styles from './styles';
 import { Language, TranslationKey, translate } from './translation';
 import GuestServices, { GuestComplaint } from './GuestServices';
+import WaterScheduleCard, { WaterScheduleModal } from './WaterScheduleCard';
 import { GuestSection, translateGuest } from './guestTranslations';
 import {
   loginCustomer,
@@ -165,6 +167,7 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('en');
   const [guestSection, setGuestSection] = useState<GuestSection>('home');
   const [notice, setNotice] = useState('');
+  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [registrationContact, setRegistrationContact] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -224,6 +227,8 @@ export default function App() {
   const displayAccountNo = profile?.accountNo ?? customerSession?.accountNo ?? '-';
   const displayName = profile?.customerName ?? latestBill?.holderName ?? customerSession?.name ?? '';
   const displayMeter = profile?.meterNo ?? latestBill?.meterNo ?? null;
+  // The pipe size, for example "1 INCH". The profile is used first, then the latest bill.
+  const displaySize = formatConnectionSize(profile?.connectionSize ?? latestBill?.connectionSize);
 
   useEffect(() => {
     if (screen !== 'home') {
@@ -239,7 +244,8 @@ export default function App() {
     const animation = Animated.loop(Animated.timing(billCardShine, {
       toValue: 1,
       duration: 2600,
-      useNativeDriver: true,
+      // The web has no native animation module, so it uses the JavaScript driver there.
+      useNativeDriver: Platform.OS !== 'web',
     }));
     animation.start();
     return () => animation.stop();
@@ -312,7 +318,8 @@ export default function App() {
         toValue,
         duration: 230,
         easing: Easing.inOut(Easing.ease),
-        useNativeDriver: true,
+        // The web has no native animation module, so it uses the JavaScript driver there.
+      useNativeDriver: Platform.OS !== 'web',
       }).start(({ finished }) => onComplete(finished));
     };
 
@@ -576,7 +583,7 @@ export default function App() {
         mobileNo: profile?.mobileNo ?? null,
         meterNo: profile?.meterNo ?? null,
         wardNo: profile?.wardNo ?? null,
-        connectionSize: profile?.connectionSize ?? null,
+        connectionSize: profile?.connectionSize ?? latestBill?.connectionSize ?? null,
         category: profile?.propertyType ?? null,
       });
       if (result === 'downloaded') {
@@ -740,6 +747,7 @@ export default function App() {
         <TextLabel style={styles.helperText}>
           Account {displayAccountNo} · Meter {bill.meterNo ?? displayMeter ?? '-'}
         </TextLabel>
+        <TextLabel style={styles.helperText}>{`SIZE : ${formatConnectionSize(bill.connectionSize ?? profile?.connectionSize)}`}</TextLabel>
         {(profile?.address ?? bill.address) ? <TextLabel style={styles.helperText}>{profile?.address ?? bill.address}</TextLabel> : null}
         <TextLabel style={styles.helperText}>
           Billing period {formatBillDate(bill.periodStart)} to {formatBillDate(bill.periodEnd)}
@@ -1032,7 +1040,12 @@ export default function App() {
                       <TextLabel style={styles.tileLabel}>{t(tile.title)}</TextLabel>
                     </Pressable>
                   ))}
+                  <Pressable onPress={() => setScheduleOpen(true)} style={[styles.serviceTile, veryCompact && { width: '48%' }]}>
+                    <View style={[styles.tileIcon, { backgroundColor: `${colors.blue}15` }]}><TextLabel bold style={{ color: colors.blue, fontSize: 20 }}>💧</TextLabel></View>
+                    <TextLabel style={styles.tileLabel}>{t('waterScheduleShort')}</TextLabel>
+                  </Pressable>
                 </View>
+                <WaterScheduleModal visible={scheduleOpen} language={language} onClose={() => setScheduleOpen(false)} />
               </View>
             </View>
             <Card style={styles.quickHelp}>
@@ -1284,6 +1297,7 @@ export default function App() {
               <View style={styles.hotlineDetails}><TextLabel bold>{t('customerHelpline')}</TextLabel><TextLabel style={styles.helperText}>16129 · Toll-free · Available anytime</TextLabel></View>
               <ActionButton title={t('call')} onPress={() => Linking.openURL('tel:16129').catch((error) => showNotice(error.message))} fontFamily={font} compact />
             </Card>
+            <WaterScheduleCard language={language} />
             <SectionTitle title={t('serviceCatalog')} />
             <View style={styles.serviceCatalog}>
               {([
@@ -1313,6 +1327,7 @@ export default function App() {
                   <TextLabel style={styles.helperText}>{profile?.mobileNo ?? 'Mobile number not on file'}</TextLabel>
                   <TextLabel style={styles.helperText}>Account {displayAccountNo}</TextLabel>
                   <TextLabel style={styles.helperText}>Meter {displayMeter ?? '-'}</TextLabel>
+                  <TextLabel style={styles.helperText}>{`SIZE : ${displaySize}`}</TextLabel>
                 </View>
               </View>
               <View style={styles.profileStats}>
@@ -1329,7 +1344,7 @@ export default function App() {
               <View style={styles.connectionInfo}>
                 <TextLabel bold>{profile?.address ?? 'Service address not on file'}</TextLabel>
                 <TextLabel style={styles.helperText}>
-                  {[profile?.propertyType, profile?.wardNo ? `Ward ${profile.wardNo}` : null, profile?.connectionSize ? `${profile.connectionSize} connection` : null].filter(Boolean).join(' · ') || `Account ${displayAccountNo}`}
+                  {[profile?.propertyType, profile?.wardNo ? `Ward ${profile.wardNo}` : null, displaySize !== '-' ? `Size ${displaySize}` : null].filter(Boolean).join(' · ') || `Account ${displayAccountNo}`}
                 </TextLabel>
               </View>
             </Card>

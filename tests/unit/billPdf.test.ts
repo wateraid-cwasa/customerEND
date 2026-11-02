@@ -182,6 +182,10 @@ describe('formatConnectionSize', () => {
   it('is used on the bill model, also for a bill that sends WCONSIZE', () => {
     expect(toBillPdfModel(bill({ connectionSize: '2' })).size).toBe('2 INCH');
     expect(toBillPdfModel(bill({ connectionSize: undefined, wconsize: 1 })).size).toBe('1 INCH');
+    // The server sends the size as a number in connectionSizeCode, or null when it is not set.
+    expect(toBillPdfModel(bill({ connectionSize: undefined, connectionSizeCode: 1 })).size).toBe('1 INCH');
+    expect(toBillPdfModel(bill({ connectionSize: undefined, connectionSizeCode: 2 })).size).toBe('2 INCH');
+    expect(toBillPdfModel(bill({ connectionSize: undefined, connectionSizeCode: null })).size).toBe('-');
   });
 });
 

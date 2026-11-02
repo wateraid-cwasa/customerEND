@@ -1,5 +1,9 @@
-import { Platform, StyleSheet } from "react-native";
+import { Platform, StatusBar, StyleSheet } from "react-native";
 import { colors } from "./theme";
+
+// Space for the phone's status bar. The app draws edge to edge, so without this the header sits under the clock
+// and the battery icon. Android reports the exact height; on iPhone 50 points covers the notch and Dynamic Island.
+const statusBarInset = Platform.OS === "android" ? StatusBar.currentHeight ?? 24 : Platform.OS === "ios" ? 50 : 0;
 
 const styles = StyleSheet.create({
   loading: {
@@ -11,7 +15,8 @@ const styles = StyleSheet.create({
   loadingText: { color: colors.white, fontFamily: "RBNylo-Bold", fontSize: 26 },
   appRoot: {
     flex: 1,
-    backgroundColor: colors.background,
+    paddingTop: statusBarInset,
+    backgroundColor: Platform.OS === "web" ? colors.background : colors.white,
     alignItems: "center",
   },
   appShell: {
@@ -28,7 +33,8 @@ const styles = StyleSheet.create({
   },
   guestRoot: {
     flex: 1,
-    backgroundColor: colors.background,
+    paddingTop: statusBarInset,
+    backgroundColor: Platform.OS === "web" ? colors.background : colors.white,
     alignItems: "center",
   },
   guestShell: {
