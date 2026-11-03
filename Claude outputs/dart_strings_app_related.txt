@@ -1,0 +1,585 @@
+78da37fed6bf1489361a312568249f3fproduct no-code_comments no-dwarf_stack_traces_mode dedup_instructions no-asan no-msan no-tsan no-shared_data arm64 android compressed-pointers
+<optimized out>
+ in type cast
+<anonymous closure>
+Deleted enum value from 
+function result
+boolean expression
+Invalid empty scheme
+Invalid arguments for 'resize' method sent to dev.flutter/channel-buffers (channel name must be less than 254 characters long)
+Value not in range
+Unrecognized message 
+The ticker was canceled before the "orCancel" property was first used.
+dev.flutter.pigeon.webview_flutter_android.CustomViewCallback.pigeon_newInstance
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onShowFileChooser
+dev.flutter.pigeon.webview_flutter_android.WebStorage.pigeon_newInstance
+Missing padding character
+Invalid arguments for 'overflow' method sent to dev.flutter/channel-buffers (second argument must be a boolean)
+tall headlineMedium 2021
+Scaffold.of() called with a context that does not contain a Scaffold.
+Invalid encoding before padding
+Missing scheme in uri: 
+). To avoid that, the Overlay tried to size itself to one of its children, but no suitable non-positioned child that belongs to an OverlayEntry with canSizeOverlay set to true could be found.
+package:webview_flutter_platform_interface/src/platform_webview_widget.dart
+englishLike titleSmall 2014
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onJsAlert
+Invalid argument
+Expected envelope List, got 
+during method call 
+englishLike headlineMedium 2021
+Invalid double
+tall bodyLarge 2021
+path or uri cannot be empty when creating AndroidPlatformFile
+Microtasks are not supported
+dense titleLarge 2021
+whiteMountainView headlineLarge
+Invalid internet address  
+A DefaultSelectionStyle constructed with DefaultSelectionStyle.fallback cannot be incorporated into the widget tree, it is meant only to provide a fallback value returned by DefaultSelectionStyle.of() when no enclosing default selection style is present in a BuildContext.
+"recorder" must not already be associated with another Canvas.
+AndroidWebViewPlatform
+Platform interfaces must not be implemented with `implements`
+dev.flutter.pigeon.webview_flutter_android.GeolocationPermissionsCallback.pigeon_newInstance
+Illegal drive letter 
+whiteMountainView labelMedium
+Illegal scheme character
+WebViewPoint
+' as a function. Since types do not define a method 'call', this is not possible. Did you intend to call the 
+dense bodySmall 2021
+englishLike labelLarge 2021
+PlatformWebViewWidget.
+init:_httpConnectionHook@17463476
+Invalid base64 padding, padded length must be multiple of four, is 
+Invalid arguments for 'resize' method sent to dev.flutter/channel-buffers (channel name must not contain any null bytes)
+https:
+dev.flutter.pigeon.webview_flutter_android.JavaScriptChannel.postMessage
+tall labelLarge 2014
+dev.flutter.pigeon.webview_flutter_android.WebResourceRequest.pigeon_newInstance
+Invalid unicode escape
+setWebViewClient
+ZoneID should not contain % anymore
+englishLike bodyMedium 2014
+TextPainter.text must be set to a non-null value before using the TextPainter.
+Cannot add event after closing
+PictureRecorder did not start recording.
+Illegal IPv6 address, only one wildcard `::` is allowed
+dev.flutter.pigeon.webview_flutter_android.CookieManager.pigeon_newInstance
+fallback style; consider putting your text in a Material
+dart._http
+AndroidWebViewControllerCreationParams.fromPlatformWebViewControllerCreationParams
+AndroidWebViewController.
+PlatformWebViewControllerCreationParams
+blackMountainView displaySmall
+Unexpected character
+package:webview_flutter_platform_interface/src/platform_navigation_delegate.dart
+dev.flutter.pigeon.webview_flutter_android.WebView.postUrl
+Cannot add to an unmodifiable list
+whiteMountainView bodyLarge
+Invalid base64 padding, more than two '=' characters
+invalid character
+Unterminated number literal
+dense headlineMedium 2021
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onFormResubmission
+TweenSequence.evaluate() could not find an interval for 
+ Focus Scope
+package:webview_flutter/src/webview_widget.dart
+  <no message available>x
+A DefaultTextStyle constructed with DefaultTextStyle.fallback cannot be incorporated into the widget tree, it is meant only to provide a fallback value returned by DefaultTextStyle.of() when no enclosing default text style is present in a BuildContext.
+Invalid envelope
+each part must be in the range 0..255
+Invalid base64 data
+tall displayLarge 2021
+Illegal percent encoding in URI
+attaching to the render tree
+Can't connect right now
+PlatformWebViewController
+englishLike labelMedium 2014
+Unknown key event type: 
+createPlatformWebViewWidget
+tall displayLarge 2014
+.<anonymous closure>
+dev.flutter.pigeon.webview_flutter_android.PermissionRequest.deny
+package:webview_flutter_platform_interface/src/types/web_resource_error.dart
+while dispatching a pointer event
+Assertion failed
+Key not in map.
+whiteMountainView bodyMedium
+while handling a pointer data packet
+package:webview_flutter_platform_interface/src/platform_webview_controller.dart
+englishLike titleMedium 2021
+while handling a gesture
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onPageCommitVisible
+englishLike labelSmall 2014
+plugins.flutter.io/webview
+dev.flutter.pigeon.webview_flutter_android.CustomViewCallback.onCustomViewHidden
+ was invoked but isn't implemented by PlatformViewsService
+tall titleMedium 2021
+englishLike bodyLarge 2014
+dev.flutter.pigeon.webview_flutter_android.FlutterAssetManager.pigeon_newInstance
+ are not in the same render tree.
+tall titleLarge 2021
+package:webview_flutter_android/src/android_webview_platform.dart
+Cannot remove from an unmodifiable list
+tall displayMedium 2021
+englishLike headlineLarge 2021
+Cannot add event while adding a stream
+The BackgroundIsolateBinaryMessenger.instance value is invalid until BackgroundIsolateBinaryMessenger.ensureInitialized is executed.
+init:_pigeonVar_codecWebViewClient@379048409
+ with matching arguments
+Invalid direction 
+WebViewWidget.
+dense titleMedium 2021
+dev.flutter.pigeon.webview_flutter_android.SslErrorHandler.cancel
+AndroidWebViewWidget.
+englishLike displayLarge 2014
+Too many elements
+Internal error: unexpected format for ready message: '
+WebViewClient.pigeon_detached
+dense labelSmall 2021
+blackMountainView displayLarge
+AndroidWebViewControllerCreationParams
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.pigeon_newInstance
+get:_httpConnectionHook@17463476
+' has already been initialized.
+blackMountainView headlineLarge
+tall displaySmall 2014
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onProgressChanged
+whiteMountainView displayLarge
+dev.flutter.pigeon.webview_flutter_android.WebResourceResponse.pigeon_newInstance
+dev.flutter.pigeon.webview_flutter_android.DownloadListener.pigeon_defaultConstructor
+englishLike titleLarge 2021
+Cannot extract a file path from a URI with a query component
+Expected envelope, got nothing
+whiteMountainView titleLarge
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onPageFinished
+PlatformWebViewWidgetCreationParams
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onReceivedLoginRequest
+dev.flutter.pigeon.webview_flutter_android.ConsoleMessage.pigeon_newInstance
+englishLike labelMedium 2021
+createPlatformWebViewController
+https://green-spoonbill-644345.hostingersite.com/
+dense bodyLarge 2014
+Error handler must accept one Object or one Object and a StackTrace as arguments, and return a value of the returned future's type
+blackMountainView displayMedium
+tall bodySmall 2021
+ink renderer
+AndroidWebViewWidget
+The current set of widget states is 
+Cannot extract a file path from a URI with a fragment component
+dense labelLarge 2021
+dev.flutter.pigeon.webview_flutter_android.WebView.onScrollChanged
+blackMountainView labelSmall
+Invalid radix-
+Tokens and palettes match source color.
+Primary Container is source color, adjusted to ensure contrast with surfaces.
+For example, if source color is black, it is lightened so it doesn't match surfaces in dark mode.
+Tertiary palette is complement of source color.
+The type parameter is not nullable
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onReceivedHttpError
+Cannot complete a future with itself
+dev.flutter.pigeon.webview_flutter_android.WebView.settings
+whiteMountainView labelLarge
+Non-https connection "
+tall titleSmall 2021
+Unterminated string
+tall headlineLarge 2014
+whiteMountainView displaySmall
+PlatformWebViewWidget
+while processing the key message handler
+Invalid port
+during a platform message callback
+. The app may not function as expected until you remove this plugin from pubspec.yaml
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onGeolocationPermissionsHidePrompt
+package:webview_flutter_platform_interface/src/webview_platform.dart
+Host platform returned null value for non-null return value.
+ channel was discarded before it could be handled.
+This happens when a plugin sends messages to the framework side before the framework has had an opportunity to register a listener. See the ChannelBuffers API documentation for details on how to configure the channel to expect more messages, or to expect messages to get discarded:
+  https://api.flutter.dev/flutter/dart-ui/ChannelBuffers-class.html
+The capacity of the 
+"matrix4" must have 16 entries.
+RenderBox was not laid out: 
+0:XECCCCCN:lDb AAAAA
+Cannot remove from a fixed-length list
+Invalid value
+dev.flutter.pigeon.webview_flutter_android.X509Certificate.pigeon_newInstance
+'print' is not supported
+: Not greater than or equal to 
+Invalid arguments for 'overflow' method sent to dev.flutter/channel-buffers (first argument must be a string)
+WebViewPlatform.
+: Not in inclusive range 
+blackMountainView titleMedium
+AndroidWebViewController
+blackMountainView headlineSmall
+dense displayMedium 2014
+Invalid URL encoding
+englishLike displayMedium 2021
+Unexpected address type 
+Future not completed
+dev.flutter.pigeon.webview_flutter_android.WebStorage.instance
+dev.flutter.pigeon.webview_flutter_android.AndroidMessage.sendToTarget
+WebView
+Positive input exceeds the limit of integer
+Unable to load asset: "NOTICES.Z".
+WebViewClient.pigeon_new
+Illegal IPv6 address, address is too short
+whiteMountainView titleSmall
+dense titleLarge 2014
+AndroidWebViewWidgetCreationParams
+WebViewController
+dev.flutter.pigeon.webview_flutter_android.PigeonInternalInstanceManager.clear
+Getting current working directory failed
+tall bodyMedium 2021
+dense displayLarge 2014
+dev.flutter.pigeon.webview_flutter_android.WebSettings.setMediaPlaybackRequiresUserGesture
+handling status bar action
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onReceivedHttpAuthRequest
+'Uri.base' is not supported$
+FileSelectorParams could not be instantiated because it received an unsupported mode.
+Cannot extract a non-Windows file path from a file URI with an authority
+init:_pigeonVar_codecWebView@379048409
+The null object does not have a 
+dev.flutter.pigeon.webview_flutter_android.WebSettings.setDomStorageEnabled
+WebViewWidget.fromPlatformCreationParams$
+A more efficient solution is to split your build function into several widgets. This introduces a new context from which you can obtain the Scaffold. In this solution, you would have an outer widget that creates the Scaffold populated by instances of your new inner widgets, and then in these inner widgets you would use Scaffold.of().
+A less elegant but more expedient solution is assign a GlobalKey to the Scaffold, then use the key.currentState property to obtain the ScaffoldState rather than using the Scaffold.of() function.
+Consider using "WidgetStateMapper<
+Illegal IPv6 address, invalid start colon
+dev.flutter.pigeon.webview_flutter_android.WebView.loadUrl
+dev.flutter.pigeon.webview_flutter_android.WebView.pigeon_defaultConstructor
+Constraints are not available because RenderView has not been given a configuration yet.
+englishLike titleSmall 2021
+blackMountainView bodyLarge
+dense displaySmall 2014
+Double-check whether the map was used in a place that documents support for WidgetStateProperty objects. If so, please file a bug report. (The https://pub.dev/ page for a package contains a link to "View/report issues".)
+Almost identical to Fidelity.
+Tertiary palette is analogue of source color.
+Found by dividing color wheel by 6, then finding the 2 colors adjacent to source.
+The one that increases hue is used.
+dense bodySmall 2014
+ was not loaded.
+dev.flutter.pigeon.webview_flutter_android.WebResourceErrorCompat.pigeon_newInstance
+Navigator Scope
+dev.flutter.pigeon.webview_flutter_android.WebSettings.setBuiltInZoomControls
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onReceivedSslError
+dev.flutter.pigeon.webview_flutter_android.PrivateKey.pigeon_newInstance
+Invalid envelope: 
+ frames from 
+' was called on null.
+dev.flutter.pigeon.webview_flutter_android.WebView.canGoBack
+while executing callbacks for FrameTiming
+englishLike labelSmall 2021
+while rebuilding dirty elements
+dense titleMedium 2014
+Closure call with mismatched arguments: function '
+Unsupported operation: 
+Assertion failed: 
+while processing a key handler
+Invalid method call: 
+dense labelMedium 2014
+Expected method call Map, got 
+Illegal IPv6 address, invalid character
+PlatformWebViewController.
+while processing a raw key listener
+Invalid IPvFuture address character
+: no indices are valid
+Cannot modify unmodifiable map
+Invalid padding character
+tall titleLarge 2014
+Too few elements
+dev.flutter.pigeon.webview_flutter_android.WebSettings.pigeon_newInstance
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onShowCustomView
+WebViewController.fromPlatformCreationParams
+blackMountainView labelLarge
+tall displayMedium 2014
+`webview_flutter_android` threw an error: 
+NoSuchMethodError: Cannot assign to final variable '
+tall displaySmall 2021
+pickFile() has not been implemented.
+is not true.
+Contains invalid character code, not 0 <= code <= 0x10FFFF
+Missing end `]` to match `[` in host
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onPageStarted
+dense headlineLarge 2021
+dev.flutter.pigeon.webview_flutter_android.WebSettings.setDisplayZoomControls
+while finalizing the widget tree
+handleError callback must take either an Object (the error), or both an Object (the error) and a StackTrace.
+: Only valid value is 
+<asynchronous suspension>
+tonal spot
+" is not supported by the platform. Refer to https://docs.flutter.dev/release/breaking-changes/network-policy-ios-android.
+Unrecognized message sent to dev.flutter/channel-buffers (method name too long)
+Invalid arguments for 'resize' method sent to dev.flutter/channel-buffers (second argument must be an integer in the range 0 to 2147483647)
+dev.flutter.pigeon.webview_flutter_android.ClientCertRequest.cancel
+parts must not have leading zeros
+tall bodySmall 2014
+The constraints given to the overlay (
+Overlay was given infinite constraints and cannot be sized by a suitable child.
+Timer interface not supported.
+A Dart object attempted to access a native peer, but the native peer has been collected (nullptr). This is usually the result of calling methods on a native-backed object when the native resources have already been disposed.
+Illegal IPv6 address, an address must contain at most 8 parts
+tall titleSmall 2014
+Cyclic error in JSON stringify
+(elided one frame from 
+Unexpected extension byte
+PlatformWebViewController.implementation
+: index should be less than 
+Bad state: 
+Cannot change an unmodifiable set
+Unrecognized method '
+Control character in string
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.urlLoading
+Pastel tokens, low chroma palettes (32).
+Default Material You theme at 2021 launch.
+package:webview_flutter/src/webview_controller.dart
+To use CrossAxisAlignment.baseline, you must also specify which baseline to use using the "textBaseline" argument.
+englishLike displaySmall 2021
+while handling pending events
+Tried calling: 
+dense displaySmall 2021
+Invalid hex digit
+AndroidWebViewPlatform.
+' has not been initialized.
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onHideCustomView
+dense bodyMedium 2021
+Encoded surrogate
+Future already completed
+Invalid image dimensions.
+Invalid IPv6 address with scope ID
+dense labelMedium 2021
+Message corrupted
+Must be positive and <= 2^32
+' has been assigned during initialization.
+IPv4 addresses cannot have a scope ID
+No events after a done.
+package:cwasa_app/main.dart
+while dispatching a non-hit-tested pointer event
+The error handler of Future.catchError must return a value of the future's type
+during a platform message response callback
+AbiSpecificInteger is missing mapping for "
+Check your internet connection and try again.
+Missing expected digit
+blackMountainView bodyMedium
+dense headlineMedium 2014
+dev.flutter.pigeon.webview_flutter_android.WebView.setWebViewClient
+Illegal path character 
+Invalid method call
+tall headlineSmall 2021
+Missing extension byte
+tall headlineMedium 2014
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.doUpdateVisitedHistory
+dense labelLarge 2014
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.setSynchronousReturnValueForOnShowFileChooser
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onReceivedRequestError
+whiteMountainView bodySmall
+tall bodyLarge 2014
+dev.flutter.pigeon.webview_flutter_android.ClientCertRequest.pigeon_newInstance
+Out of unicode range
+Could not find a WebResourceErrorType for errorCode: 
+dev.flutter.pigeon.webview_flutter_android.DownloadListener.onDownloadStart
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onLoadResource
+There was an attempt to access the "
+tall labelLarge 2021
+englishLike bodySmall 2021
+" not handled.
+Stack Overflow
+dense displayMedium 2021
+`const Object()` cannot be used as the token.
+WebViewFeature
+blackMountainView headlineMedium
+whiteMountainView labelSmall
+Isolate.spawn ready
+while dispatching notifications for 
+englishLike titleLarge 2014
+whiteMountainView headlineSmall
+package:webview_flutter_platform_interface/src/types/platform_webview_widget_creation_params.dart
+Not supported for hybrid composition.
+Unexpected function data 
+Unknown keymap for key events: 
+Invalid arguments for 'overflow' method sent to dev.flutter/channel-buffers (arguments must be a two-element list, channel name and flag state)
+blackMountainView titleSmall
+name cannot be empty when creating AndroidPlatformFile
+None of the provided map keys matched this set, and the type "
+Cannot modify an unmodifiable list
+) would result in an illegal infinite size (
+tall labelSmall 2014
+dev.flutter.pigeon.webview_flutter_android.GeolocationPermissionsCallback.invoke
+englishLike headlineSmall 2014
+whiteMountainView headlineMedium
+dense headlineSmall 2021
+dev.flutter.pigeon.webview_flutter_android.HttpAuthHandler.pigeon_newInstance
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onReceivedClientCertRequest
+TextPainter.textDirection must be set to a non-null value before using the TextPainter.
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onJsPrompt
+dev.flutter.pigeon.webview_flutter_android.WebSettings.setSupportMultipleWindows
+Invalid arguments for 'resize' method sent to dev.flutter/channel-buffers (arguments must be a two-element list, channel name and new capacity)
+package:webview_flutter/src/navigation_delegate.dart
+WebViewShell
+englishLike headlineMedium 2014
+tall labelMedium 2021
+while building a TextSpan
+ is not a valid platformBrightness.
+?>()", or adding the "WidgetState.any" key to this map.
+englishLike labelLarge 2014
+while routing a pointer event
+ constructor and forget the 'new' operator?
+Computation ended without result
+englishLike headlineLarge 2014
+Pattern matching error
+dev.flutter.pigeon.webview_flutter_android.WebSettings.setLoadWithOverviewMode
+dense bodyMedium 2014
+No implementation found for method 
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.requestLoading
+asynchronous suspension
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.pigeon_defaultConstructor
+Unexpected end of input
+ was invoked but isn't implemented by 
+tall bodyMedium 2014
+Invalid number
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onPermissionRequest
+Another exception was thrown: 
+dev.flutter.pigeon.webview_flutter_android.SslCertificateDName.pigeon_newInstance
+Illegal character in path: 
+dev.flutter.pigeon.webview_flutter_android.WebView.setWebChromeClient
+whiteMountainView titleMedium
+Illegal IPv4 address, 
+TimeoutException after 
+dev.flutter.pigeon.webview_flutter_android.PigeonInternalInstanceManager.removeStrongReference
+Missing address in IPvFuture address, host, cursor
+': Failed assertion: line 
+dev.flutter.pigeon.webview_flutter_android.WebView.pigeon_newInstance
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onScaleChanged
+tall titleMedium 2014
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onJsConfirm
+Invalid base64 padding, '=' not at the end
+This ticker was canceled: 
+ Failed assertion:
+Illegal IPv6 address, missing part
+englishLike bodyLarge 2021
+Missing hex-digit in IPvFuture address
+WebViewWidget
+englishLike displayMedium 2014
+dense titleSmall 2021
+dev.flutter.pigeon.webview_flutter_android.AndroidMessage.pigeon_newInstance
+: Valid value range is empty
+WebViewClient
+package:webview_flutter_android/src/android_webview_controller.dart
+yield before stream is listened to
+dense titleSmall 2014
+"colors" must have length 2 if "colorStops" is omitted.
+tall headlineLarge 2021
+Invalid length, must be multiple of four
+Concurrent modification during iteration: 
+dev.flutter.pigeon.webview_flutter_android.WebResourceError.pigeon_newInstance
+package:webview_flutter_platform_interface/src/types/javascript_mode.dart
+Index out of range
+Unfinished UTF-8 octet sequence
+Cannot add to a fixed-length list
+Illegal IPv6 address, an IPv6 part can contain a maximum of 4 hex digits
+englishLike displaySmall 2014
+package:webview_flutter_platform_interface/src/types/platform_webview_controller_creation_params.dart
+WebViewRequest#uri is required to have a scheme.
+Invalid arguments for 'resize' method sent to dev.flutter/channel-buffers (first argument must be a string)
+tall headlineSmall 2014
+package:webview_flutter_android/src/weak_reference_utils.dart
+Unable to establish connection on channel: "
+dev.flutter.pigeon.webview_flutter_android.PermissionRequest.pigeon_newInstance
+dev.flutter.pigeon.webview_flutter_android.WebViewPoint.pigeon_newInstance
+: index must not be negative
+dense headlineSmall 2014
+englishLike bodyMedium 2021
+Windows paths with \\?\ prefix must be absolute
+dev.flutter.pigeon.webview_flutter_android.SslCertificate.pigeon_newInstance
+whiteMountainView displayMedium
+Invalid arguments for 'overflow' method sent to dev.flutter/channel-buffers (channel name must be less than 254 characters long)
+Missing '.' in IPvFuture address
+WebViewPlatform
+while notifying status listeners for 
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onGeolocationPermissionsShowPrompt
+dev.flutter.pigeon.webview_flutter_android.WebSettings.setJavaScriptCanOpenWindowsAutomatically
+englishLike headlineSmall 2021
+Super class of class '
+: Not less than or equal to 
+dev.flutter.pigeon.webview_flutter_android.WebView.setDownloadListener
+WebView.pigeon_new
+package:webview_flutter_android/src/platform_views_service_proxy.dart
+The app requested a view, but the platform did not provide one.
+This is likely because the app called `runApp` to render its root widget, which expects the platform to provide a default view to render into (the "implicit" view).
+However, the platform likely has multi-view mode enabled, which does not create this default "implicit" view.
+Try using `runWidget` instead of `runApp` to start your app.
+`runWidget` allows you to provide a `View` widget, without requiring a default view.
+Unable to spawn isolate: 
+dev.flutter.pigeon.webview_flutter_android.Certificate.pigeon_newInstance
+dense displayLarge 2021
+A RenderObject does not have any constraints before it has been laid out.
+Illegal character in path
+dev.flutter.pigeon.webview_flutter_android.WebSettings.setUseWideViewPort
+Illegal IPv6 address, an address without a wildcard must contain exactly 8 parts
+englishLike bodySmall 2014
+TextPainter.paint called when text geometry was not yet calculated.
+Please call layout() before paint() to position the text before painting it.
+dev.flutter.pigeon.webview_flutter_android.WebView.setBackgroundColor
+unexpected yield
+The error handler of Future.then must return a value of the returned future's type
+Cannot extract a file path from a 
+blackMountainView bodySmall
+dev.flutter.pigeon.webview_flutter_android.HttpAuthHandler.cancel
+PlatformWebViewWidget.implementation
+englishLike displayLarge 2021
+Widgets that mix AutomaticKeepAliveClientMixin into their State must call super.build() but must ignore the return value of the superclass.
+Root Focus ScopeD
+dev.flutter.pigeon.webview_flutter_android.SslErrorHandler.pigeon_newInstance
+Chattogram WASA
+tall labelMedium 2014
+Unrecognized string escape
+dev.flutter.pigeon.webview_flutter_android.WebViewClient.onReceivedRequestErrorCompat
+while notifying listeners for 
+dev.flutter.pigeon.webview_flutter_android.WebSettings.setJavaScriptEnabled
+pickFiles() has not been implemented.
+Negative input exceeds the limit of integer
+dense labelSmall 2014
+WebViewClient.
+during a scheduler callback
+dev.flutter.pigeon.webview_flutter_android.WebView.goBack
+blackMountainView titleLarge
+Invalid type: 
+There are several ways to avoid this problem. The simplest is to use a Builder to get a context that is "under" the Scaffold. For an example of this, please see the documentation for Scaffold.of():
+  https://api.flutter.dev/flutter/material/Scaffold/of.html
+IPv4 address should contain exactly 4 parts
+All colors are grayscale, no chroma.
+No Scaffold ancestor could be found starting from the context that was passed to Scaffold.of(). This usually happens when the context provided is from the same StatefulWidget as that whose build function actually creates the Scaffold widget being sought.
+Cannot instantiate abstract class 
+package:webview_flutter_platform_interface/src/types/load_request_params.dart
+Try wrapping the Overlay in a SizedBox to give it a finite size or use an OverlayEntry with canSizeOverlay set to true.
+Scheme not starting with alphabetic character
+Windows paths with drive letter must be absolute
+WebView.
+Converting object to an encodable object failed:
+Deferred library 
+dev.flutter.pigeon.webview_flutter_android.WebSettingsCompat.pigeon_newInstance
+dense bodyLarge 2021
+Converting object did not return an encodable object:
+package:webview_flutter_android/src/android_webkit.g.dart
+Invalid UTF-8 byte
+dense headlineLarge 2014
+Window toolkit not recognized: 
+Invalid MIME type
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.onConsoleMessage
+dev.flutter.pigeon.webview_flutter_android.View.pigeon_newInstance
+Overlong encoding
+Attempt to execute code removed by Dart AOT compiler (TFA)
+tall labelSmall 2021
+Stream has already been listened to.
+Invalid character
+englishLike titleMedium 2014
+Invalid base64 encoding length 
+blackMountainView labelMedium,
+WidgetStateProperty objects should only be used in places that document their support.
+Truncated URI
+dev.flutter.pigeon.webview_flutter_android.WebViewFeature.pigeon_newInstance
+The asset does not exist or has empty data.
+dev.flutter.pigeon.webview_flutter_android.WebChromeClient.pigeon_defaultConstructor
+dev.flutter.pigeon.webview_flutter_android.WebView.setWebContentsDebuggingEnabled
+Attempt to access isolate static field '
+dev.flutter.pigeon.webview_flutter_android.SslError.pigeon_newInstance
+Attempted to use type '
+done() must not be called more than once on the same 
+dev.flutter.pigeon.webview_flutter_android.FileChooserParams.pigeon_newInstance

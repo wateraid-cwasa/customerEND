@@ -30,6 +30,7 @@ import { colors, fontFamilyForText, openSansRegular, sharedStyles } from './them
 import styles from './styles';
 import { Language, TranslationKey, translate } from './translation';
 import GuestServices, { GuestComplaint } from './GuestServices';
+import PublicApp from './PublicApp';
 import WaterScheduleCard, { WaterScheduleModal } from './WaterScheduleCard';
 import { GuestSection, translateGuest } from './guestTranslations';
 import {
@@ -62,7 +63,8 @@ type Screen =
   | 'notifications'
   | 'support'
   | 'account'
-  | 'public-services';
+  | 'public-services'
+  | 'public-info';
 
 type NotificationItem = {
   id: number;
@@ -93,6 +95,16 @@ function useStableComponent<P>(impl: (props: P) => React.ReactElement): (props: 
   return useMemo(() => (props: P) => ref.current(props), []);
 }
 
+// Shows the server's category as the names customers know.
+function displayCategory(value: string | null | undefined): string {
+  const text = (value ?? '').trim();
+  if (!text) return '-';
+  const key = text.toLowerCase().replace(/[\s_-]+/g, '');
+  if (key === 'residential') return 'Domestic';
+  if (key === 'nonresidential') return 'Non Domestic';
+  return text;
+}
+
 function ActionButton({
   title,
   onPress,
@@ -121,7 +133,7 @@ function ActionButton({
         pressed && !disabled && styles.pressed,
       ]}
     >
-      <Text style={[styles.buttonText, secondary && styles.buttonSecondaryText, compact && styles.buttonCompactText, { fontFamily: fontFamilyForText(title, false, fontFamily === 'Shurjo' ? 'bn' : 'en') }]}>
+      <Text style={[styles.buttonText, secondary && styles.buttonSecondaryText, compact && styles.buttonCompactText, { fontFamily: fontFamilyForText(title, true, fontFamily === 'Shurjo' ? 'bn' : 'en') }]}>
         {title}
       </Text>
     </Pressable>
@@ -154,6 +166,7 @@ export default function App() {
     'RBNylo-Bold': require('./fonts/RBNylo-Bold.otf'),
   });
   const { width } = useWindowDimensions();
+  const tr = (en: string, bn: string) => (language === 'bn' ? bn : en);
   const wide = width >= 820;
   const tablet = width >= 600;
   const compact = width < 380;
@@ -163,12 +176,13 @@ export default function App() {
     () => (Platform.OS === 'web' ? getStoredCustomerSession() : null),
   );
   const [screen, setScreen] = useState<Screen>(() => customerSession ? 'home' : 'welcome');
-  const [isGuest, setIsGuest] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const [guestSection, setGuestSection] = useState<GuestSection>('home');
   const [notice, setNotice] = useState('');
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [registrationContact, setRegistrationContact] = useState('');
+  const [contactMode, setContactMode] = useState<'email' | 'phone'>('email');
+  const [registrationNid, setRegistrationNid] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -240,7 +254,7 @@ export default function App() {
   }, [billCardFlipScale, screen]);
 
   useEffect(() => {
-    if (screen !== 'home' || isGuest) return;
+    if (screen !== 'home') return;
     const animation = Animated.loop(Animated.timing(billCardShine, {
       toValue: 1,
       duration: 2600,
@@ -249,7 +263,7 @@ export default function App() {
     }));
     animation.start();
     return () => animation.stop();
-  }, [billCardShine, isGuest, screen]);
+  }, [billCardShine, screen]);
 
 
   const showNotice = (message: string) => {
@@ -262,7 +276,6 @@ export default function App() {
     const [bills, me] = await Promise.allSettled([getCustomerBills(), getCustomerProfile()]);
     if (bills.status === 'fulfilled') {
       setCustomerBills(bills.value);
-      if (bills.value.length === 0 && getLastBillsNote()) showNotice(getLastBillsNote());
     }
     if (me.status === 'fulfilled') {
       setProfile(me.value);
@@ -292,8 +305,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (customerSession && !isGuest) loadAccountData();
-  }, [customerSession, isGuest, loadAccountData]);
+    if (customerSession) loadAccountData();
+  }, [customerSession, loadAccountData]);
 
   useEffect(() => {
     if (!latestBill) return;
@@ -336,23 +349,16 @@ export default function App() {
   };
 
   const beginSignIn = () => {
-    setIsGuest(false);
     setScreen('sign-in');
-  };
-
-  const enterGuestPortal = () => {
-    setIsGuest(true);
-    setGuestSection('home');
-    setScreen('public-services');
   };
 
   const signIn = async () => {
     if (!accountNumber.trim()) {
-      showNotice('Enter your CWASA account number.');
+      showNotice(tr('Enter your CWASA account number.', 'আপনার ওয়াসা অ্যাকাউন্ট নম্বর দিন।'));
       return;
     }
     if (!password) {
-      showNotice('Enter your password.');
+      showNotice(tr('Enter your password.', 'আপনার পাসওয়ার্ড দিন।'));
       return;
     }
     setAuthBusy(true);
@@ -360,16 +366,15 @@ export default function App() {
       const session = await loginCustomer(accountNumber.trim(), password);
       setCustomerSession(session);
       setPassword('');
-      setIsGuest(false);
       setScreen('home');
       showNotice(t('welcomeBack'));
     } catch (error) {
       if (error instanceof ApiConnectionError) {
-        showNotice('Could not reach the CWASA server.');
+        showNotice(tr('Could not reach the CWASA server.', 'ওয়াসা সার্ভারে সংযোগ করা যায়নি।'));
       } else if (error instanceof ApiRequestError && (error.status === 401 || error.status === 404)) {
-        showNotice('The account number or password is incorrect.');
+        showNotice(tr('The account number or password is incorrect.', 'অ্যাকাউন্ট নম্বর বা পাসওয়ার্ড ভুল।'));
       } else {
-        showNotice('Could not sign in. Please try again.');
+        showNotice(tr('Could not sign in. Please try again.', 'সাইন ইন করা যায়নি। আবার চেষ্টা করুন।'));
       }
     } finally {
       setAuthBusy(false);
@@ -380,17 +385,17 @@ export default function App() {
     const account = accountNumber.trim();
     const contact = registrationContact.trim();
     if (!account) {
-      showNotice('Enter your CWASA account number.');
+      showNotice(tr('Enter your CWASA account number.', 'আপনার ওয়াসা অ্যাকাউন্ট নম্বর দিন।'));
       return;
     }
     if (!contact) {
-      showNotice('Enter your email address or phone number.');
+      showNotice(contactMode === 'email' ? tr('Enter your email address.', 'আপনার ইমেইল ঠিকানা দিন।') : tr('Enter your mobile number.', 'আপনার মোবাইল নম্বর দিন।'));
       return;
     }
     let verificationContact: { email: string } | { phone: string };
-    if (contact.includes('@')) {
+    if (contactMode === 'email') {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact)) {
-        showNotice('Enter a valid email address or phone number.');
+        showNotice(tr('Enter a valid email address.', 'সঠিক ইমেইল ঠিকানা দিন।'));
         return;
       }
       verificationContact = { email: contact };
@@ -399,38 +404,44 @@ export default function App() {
       if (digits.startsWith('880')) digits = digits.slice(3);
       if (digits.startsWith('0')) digits = digits.slice(1);
       if (!/^1\d{9}$/.test(digits)) {
-        showNotice('Enter a valid Bangladesh mobile number beginning with 01, or use your registered email.');
+        showNotice(tr('Enter a valid Bangladesh mobile number. After BD +880 type 10 digits, for example 1712345678.', 'সঠিক বাংলাদেশি মোবাইল নম্বর দিন। BD +880 এর পরে ১০টি সংখ্যা লিখুন, যেমন 1712345678।'));
         return;
       }
       verificationContact = { phone: `0${digits}` };
     }
+    const nidDigits = registrationNid.replace(/\D/g, '');
+    if (![10, 13, 17].includes(nidDigits.length)) {
+      showNotice(tr('Enter a valid NID number with 10, 13 or 17 digits.', 'সঠিক এনআইডি নম্বর দিন (১০, ১৩ বা ১৭ সংখ্যা)।'));
+      return;
+    }
     if (password.length < 8 || password.length > 72 || !/[A-Za-z]/.test(password) || !/\d/.test(password)) {
-      showNotice('Use a password of 8 to 72 characters with at least one letter and one number.');
+      showNotice(tr('Use a password of 8 to 72 characters with at least one letter and one number.', 'পাসওয়ার্ড ৮ থেকে ৭২ অক্ষরের হতে হবে এবং কমপক্ষে একটি অক্ষর ও একটি সংখ্যা থাকতে হবে।'));
       return;
     }
     if (password !== confirmPassword) {
-      showNotice('The two passwords do not match.');
+      showNotice(tr('The two passwords do not match.', 'দুটি পাসওয়ার্ড মিলছে না।'));
       return;
     }
     setAuthBusy(true);
     try {
-      await registerCustomer(account, verificationContact, password);
+      await registerCustomer(account, verificationContact, password, nidDigits);
       setPassword('');
       setConfirmPassword('');
       setRegistrationContact('');
+      setRegistrationNid('');
       setShowPassword(false);
       setShowConfirmPassword(false);
       setScreen('sign-in');
-      showNotice('Your password has been created. Please sign in.');
+      showNotice(tr('Your password has been created. Please sign in.', 'আপনার পাসওয়ার্ড তৈরি হয়েছে। এখন সাইন ইন করুন।'));
     } catch (error) {
       if (error instanceof ApiConnectionError) {
-        showNotice('Could not reach the CWASA server.');
+        showNotice(tr('Could not reach the CWASA server.', 'ওয়াসা সার্ভারে সংযোগ করা যায়নি।'));
       } else if (error instanceof ApiRequestError && error.status === 404) {
-        showNotice('We could not verify that account with the supplied email or phone number.');
+        showNotice(tr('We could not verify that account with the supplied email or phone number.', 'এই ইমেইল বা ফোন নম্বর দিয়ে অ্যাকাউন্টটি যাচাই করা যায়নি।'));
       } else if (error instanceof ApiRequestError && (error.status === 400 || error.status === 409)) {
         showNotice(error.message);
       } else {
-        showNotice('Could not create your account. Please try again.');
+        showNotice(tr('Could not create your account. Please try again.', 'অ্যাকাউন্ট খোলা যায়নি। আবার চেষ্টা করুন।'));
       }
     } finally {
       setAuthBusy(false);
@@ -551,9 +562,8 @@ export default function App() {
     showNotice(language === 'bn' ? 'সব বিজ্ঞপ্তি পড়া হয়েছে।' : 'All notifications marked as read.');
   };
 
-  const openPublicServices = (section: GuestSection = 'home') => {
-    setGuestSection(section);
-    setScreen('public-services');
+  const openPublicServices = (_section: GuestSection = 'home') => {
+    setScreen('public-info');
   };
 
   const registerGuestComplaint = (complaint: GuestComplaint) => {
@@ -584,7 +594,7 @@ export default function App() {
         meterNo: profile?.meterNo ?? null,
         wardNo: profile?.wardNo ?? null,
         connectionSize: profile?.connectionSize ?? latestBill?.connectionSize ?? null,
-        category: profile?.propertyType ?? null,
+        category: displayCategory(profile?.propertyType) === '-' ? null : displayCategory(profile?.propertyType),
       });
       if (result === 'downloaded') {
         showNotice(language === 'bn' ? `${billPdfFileName(bill)} ডাউনলোড হয়েছে।` : `${billPdfFileName(bill)} downloaded.`);
@@ -642,6 +652,7 @@ export default function App() {
     secure = false,
     revealed = false,
     onToggleReveal,
+    autoFill,
   }: {
     label: string;
     value: string;
@@ -652,9 +663,10 @@ export default function App() {
     secure?: boolean;
     revealed?: boolean;
     onToggleReveal?: () => void;
+    autoFill?: 'off' | 'new-password';
   }) => (
-    <View style={styles.field}>
-      <TextLabel style={styles.fieldLabel}>{label}</TextLabel>
+    <View style={[styles.field, authScreen && { marginBottom: 20 }]}>
+      <TextLabel style={[styles.fieldLabel, authScreen && { fontSize: 14, marginBottom: 8 }]}>{label}</TextLabel>
       <View>
         <TextInput
           accessibilityLabel={label}
@@ -666,13 +678,18 @@ export default function App() {
           multiline={multiline}
           secureTextEntry={secure && !revealed}
           autoCapitalize={secure ? 'none' : undefined}
+          // Stop the browser and phone from filling saved logins into these boxes.
+          autoComplete={autoFill ?? 'off'}
+          importantForAutofill="no"
+          textContentType={secure ? 'newPassword' : 'none'}
           autoCorrect={secure ? false : undefined}
           textAlignVertical={multiline ? 'top' : 'center'}
           style={[
             sharedStyles.input,
             multiline && styles.multilineInput,
             secure && onToggleReveal ? { paddingRight: 46 } : null,
-            { fontFamily: fontFamilyForText(value || placeholder || label, false, language), fontSize: largeText ? 17 : 14 },
+            authScreen && { minHeight: 56, borderRadius: 12, paddingHorizontal: 16 },
+            { fontFamily: fontFamilyForText(value || placeholder || label, false, language), fontSize: largeText ? 17 : authScreen ? 16 : 14 },
           ]}
         />
         {secure && onToggleReveal ? (
@@ -691,9 +708,9 @@ export default function App() {
   );
 
   const Heading = ({ title, subtitle }: { title: string; subtitle?: string }) => (
-    <View style={styles.heading}>
-      <TextLabel bold style={styles.headingTitle}>{title}</TextLabel>
-      {subtitle ? <TextLabel style={styles.headingSubtitle}>{subtitle}</TextLabel> : null}
+    <View style={[styles.heading, authScreen && { marginBottom: 22 }]}>
+      <TextLabel bold style={[styles.headingTitle, authScreen && { fontSize: 28 }]}>{title}</TextLabel>
+      {subtitle ? <TextLabel style={[styles.headingSubtitle, authScreen && { fontSize: 15, marginTop: 6 }]}>{subtitle}</TextLabel> : null}
     </View>
   );
 
@@ -800,8 +817,10 @@ export default function App() {
     );
   };
 
-  const contentFrame = wide && screen !== 'home' ? { width: '100%' as const, maxWidth: 720, alignSelf: 'center' as const } : undefined;
   const authScreen = screen === 'sign-in' || screen === 'sign-up';
+  const contentFrame = authScreen
+    ? { width: '100%' as const, maxWidth: 520, alignSelf: 'center' as const }
+    : wide && screen !== 'home' ? { width: '100%' as const, maxWidth: 720, alignSelf: 'center' as const } : undefined;
 
   const header = (
     <View style={[styles.header, wide && styles.headerWide, compact && { paddingHorizontal: 12, gap: 6 }]}>
@@ -869,58 +888,80 @@ export default function App() {
             </View>
             <View style={styles.welcomeActions}>
               <ActionButton title={t('continueWithMobile')} onPress={beginSignIn} fontFamily={font} />
-              <ActionButton title={t('exploreGuest')} onPress={enterGuestPortal} secondary fontFamily={font} />
             </View>
           </View>
         );
       case 'sign-in':
         return (
           <View style={styles.formScreen}>
-            <Heading title="Sign in" subtitle="Sign in to manage your CWASA services." />
+            <Heading title={tr('Sign in', 'সাইন ইন')} subtitle={tr('Sign in to manage your CWASA services.', 'আপনার ওয়াসা সেবা পরিচালনা করতে সাইন ইন করুন।')} />
             <Card>
-              <Field label="Account number" value={accountNumber} onChangeText={setAccountNumber} placeholder="070046SD" />
-              <Field label="Password" value={password} onChangeText={setPassword} placeholder="Enter your password" secure revealed={showPassword} onToggleReveal={() => setShowPassword((v) => !v)} />
-              <ActionButton title={authBusy ? '...' : 'Sign in'} onPress={signIn} fontFamily={font} />
+              <Field label={tr('Account number', 'অ্যাকাউন্ট নম্বর')} value={accountNumber} onChangeText={setAccountNumber} placeholder="070046SD" autoFill="off" />
+              <Field label={tr('Password', 'পাসওয়ার্ড')} value={password} onChangeText={setPassword} placeholder={tr('Enter your password', 'আপনার পাসওয়ার্ড দিন')} autoFill="off" secure revealed={showPassword} onToggleReveal={() => setShowPassword((v) => !v)} />
+              <ActionButton title={authBusy ? '...' : tr('Sign in', 'সাইন ইন')} onPress={signIn} fontFamily={font} />
             </Card>
-            <LinkAction title="New here? Create an account" onPress={() => { setPassword(''); setShowPassword(false); setScreen('sign-up'); }} />
-            <LinkAction title={t('exploreGuest')} onPress={enterGuestPortal} />
+            <LinkAction title={tr('New here? Create an account', 'নতুন? অ্যাকাউন্ট খুলুন')} onPress={() => { setPassword(''); setShowPassword(false); setScreen('sign-up'); }} />
             <ActionButton title={t('back')} onPress={() => setScreen('welcome')} secondary fontFamily={font} />
           </View>
         );
       case 'sign-up':
         return (
           <View style={styles.formScreen}>
-            <Heading title="Create account" subtitle="Register with you CWASA account number." />
+            <Heading title={tr('Create account', 'অ্যাকাউন্ট খুলুন')} subtitle={tr('Register with your CWASA account number.', 'আপনার ওয়াসা অ্যাকাউন্ট নম্বর দিয়ে রেজিস্টার করুন।')} />
             <Card>
-              <Field label="Account number" value={accountNumber} onChangeText={setAccountNumber} placeholder="070046SD" />
+              <Field label={tr('Account number', 'অ্যাকাউন্ট নম্বর')} value={accountNumber} onChangeText={setAccountNumber} placeholder="070046SD" autoFill="off" />
               <View style={styles.field}>
-                <TextLabel style={styles.fieldLabel}>Email or phone</TextLabel>
+                <TextLabel style={styles.fieldLabel}>{tr('Verify with', 'যাচাই করুন')}</TextLabel>
+                <View accessibilityRole="radiogroup" style={{ flexDirection: 'row', gap: 24 }}>
+                  {([['email', tr('Email', 'ইমেইল')], ['phone', tr('Phone', 'ফোন')]] as const).map(([mode, label]) => (
+                    <Pressable
+                      key={mode}
+                      accessibilityRole="radio"
+                      accessibilityLabel={label}
+                      accessibilityState={{ selected: contactMode === mode }}
+                      onPress={() => { setContactMode(mode); setRegistrationContact(''); }}
+                      hitSlop={8}
+                      style={{ flexDirection: 'row', alignItems: 'center' }}
+                    >
+                      <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: contactMode === mode ? colors.blue : colors.border, alignItems: 'center', justifyContent: 'center', marginRight: 8 }}>
+                        {contactMode === mode ? <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: colors.blue }} /> : null}
+                      </View>
+                      <TextLabel style={{ color: colors.ink }}>{label}</TextLabel>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+              <View style={styles.field}>
+                <TextLabel style={styles.fieldLabel}>{contactMode === 'email' ? tr('Email address', 'ইমেইল ঠিকানা') : tr('Phone number', 'ফোন নম্বর')}</TextLabel>
                 <View style={{ flexDirection: 'row', alignItems: 'center', borderColor: colors.border, borderWidth: 1, borderRadius: 11, backgroundColor: colors.white, minHeight: 46 }}>
-                  {!registrationContact.includes('@') && !/^\+?880/.test(registrationContact) ? (
+                  {contactMode === 'phone' ? (
                     <TextLabel style={{ color: colors.ink, paddingLeft: 13, paddingRight: 8 }}>BD +880</TextLabel>
                   ) : null}
                   <TextInput
-                    accessibilityLabel="Email or phone"
+                    accessibilityLabel={contactMode === 'email' ? tr('Email address', 'ইমেইল ঠিকানা') : tr('Phone number', 'ফোন নম্বর')}
                     value={registrationContact}
                     onChangeText={setRegistrationContact}
-                    placeholder="Email address or mobile number"
+                    placeholder={contactMode === 'email' ? 'name@example.com' : '1712345678'}
                     placeholderTextColor={colors.muted}
+                    keyboardType={contactMode === 'email' ? 'email-address' : 'phone-pad'}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    autoComplete="off"
+                    importantForAutofill="no"
+                    textContentType="none"
                     style={[
                       sharedStyles.input,
-                      { flex: 1, minHeight: 44, borderWidth: 0, paddingLeft: 5, fontFamily: fontFamilyForText(registrationContact || 'Email or phone', false, language), fontSize: largeText ? 17 : 14 },
+                      { flex: 1, minHeight: 44, borderWidth: 0, paddingLeft: contactMode === 'phone' ? 5 : 13, fontFamily: fontFamilyForText(registrationContact || 'Email address', false, language), fontSize: largeText ? 17 : 14 },
                     ]}
                   />
                 </View>
-                <TextLabel style={styles.helperText}>Enter a Bangladesh mobile number beginning with 01, or enter the 10 digits after BD +880. You can also enter an email address.</TextLabel>
               </View>
-              <Field label="Password" value={password} onChangeText={setPassword} placeholder="At least 8 characters" secure revealed={showPassword} onToggleReveal={() => setShowPassword((v) => !v)} />
-              <Field label="Confirm password" value={confirmPassword} onChangeText={setConfirmPassword} placeholder="Re-enter your password" secure revealed={showConfirmPassword} onToggleReveal={() => setShowConfirmPassword((v) => !v)} />
-              <TextLabel style={styles.helperText}>Use 8 to 72 characters with at least one letter and one number.</TextLabel>
-              <ActionButton title={authBusy ? '...' : 'Create account'} onPress={signUp} fontFamily={font} />
+              <Field label={tr('NID number', 'এনআইডি নম্বর')} value={registrationNid} onChangeText={(v) => setRegistrationNid(v.replace(/\D/g, ''))} placeholder={tr('10, 13 or 17 digits', '১০, ১৩ বা ১৭ সংখ্যা')} keyboardType="numeric" autoFill="off" />
+              <Field label={tr('Password', 'পাসওয়ার্ড')} value={password} onChangeText={setPassword} placeholder={tr('At least 8 characters', 'কমপক্ষে ৮ অক্ষর')} autoFill="new-password" secure revealed={showPassword} onToggleReveal={() => setShowPassword((v) => !v)} />
+              <Field label={tr('Confirm password', 'পাসওয়ার্ড নিশ্চিত করুন')} value={confirmPassword} onChangeText={setConfirmPassword} placeholder={tr('Re-enter your password', 'আবার পাসওয়ার্ড দিন')} autoFill="new-password" secure revealed={showConfirmPassword} onToggleReveal={() => setShowConfirmPassword((v) => !v)} />
+              <ActionButton title={authBusy ? '...' : tr('Create account', 'অ্যাকাউন্ট খুলুন')} onPress={signUp} fontFamily={font} />
             </Card>
-            <LinkAction title="Already have an account? Sign in" onPress={() => { setPassword(''); setConfirmPassword(''); setShowPassword(false); setShowConfirmPassword(false); setScreen('sign-in'); }} />
+            <LinkAction title={tr('Already have an account? Sign in', 'অ্যাকাউন্ট আছে? সাইন ইন করুন')} onPress={() => { setPassword(''); setConfirmPassword(''); setShowPassword(false); setShowConfirmPassword(false); setScreen('sign-in'); }} />
             <ActionButton title={t('back')} onPress={() => setScreen('welcome')} secondary fontFamily={font} />
           </View>
         );
@@ -1166,7 +1207,7 @@ export default function App() {
       //         <SectionTitle title={t('connectionCategory')} />
       //         <OptionChips options={['domestic', 'commercial', 'nonDomestic']} selected={connectionCategory} onSelect={setConnectionCategory} />
       //         <Field label={t('applicantName')} value={connectionName} onChangeText={setConnectionName} placeholder="Full name" />
-      //         <Field label={t('nationalId')} value={nationalId} onChangeText={setNationalId} placeholder="10, 13 or 17 digits" keyboardType="numeric" />
+      //         <Field label={t('nationalId')} value={nationalId} onChangeText={setNationalId} placeholder={tr('10, 13 or 17 digits', '১০, ১৩ বা ১৭ সংখ্যা')} keyboardType="numeric" />
       //         <Field label={t('holdingNumber')} value={holdingNumber} onChangeText={setHoldingNumber} />
       //         <Field label={t('propertyType')} value={propertyType} onChangeText={setPropertyType} placeholder={t('propertyResidential')} />
       //         <SectionTitle title={t('pipeDiameter')} />
@@ -1327,7 +1368,8 @@ export default function App() {
                   <TextLabel style={styles.helperText}>{profile?.mobileNo ?? 'Mobile number not on file'}</TextLabel>
                   <TextLabel style={styles.helperText}>Account {displayAccountNo}</TextLabel>
                   <TextLabel style={styles.helperText}>Meter {displayMeter ?? '-'}</TextLabel>
-                  <TextLabel style={styles.helperText}>{`SIZE : ${displaySize}`}</TextLabel>
+                  <TextLabel style={styles.helperText}>{`Size : ${displaySize}`}</TextLabel>
+                  <TextLabel style={styles.helperText}>{`Category : ${displayCategory(profile?.propertyType)}`}</TextLabel>
                 </View>
               </View>
               <View style={styles.profileStats}>
@@ -1344,7 +1386,7 @@ export default function App() {
               <View style={styles.connectionInfo}>
                 <TextLabel bold>{profile?.address ?? 'Service address not on file'}</TextLabel>
                 <TextLabel style={styles.helperText}>
-                  {[profile?.propertyType, profile?.wardNo ? `Ward ${profile.wardNo}` : null, displaySize !== '-' ? `Size ${displaySize}` : null].filter(Boolean).join(' · ') || `Account ${displayAccountNo}`}
+                  {[displayCategory(profile?.propertyType) === '-' ? null : displayCategory(profile?.propertyType), profile?.wardNo ? `Ward ${profile.wardNo}` : null, displaySize !== '-' ? `Size ${displaySize}` : null].filter(Boolean).join(' · ') || `Account ${displayAccountNo}`}
                 </TextLabel>
               </View>
             </Card>
@@ -1356,7 +1398,7 @@ export default function App() {
               <PreferenceToggle title={t('smsFallback')} value={smsFallback} onChange={setSmsFallback} />
               <View style={styles.separator} />
               <ActionButton title={translateGuest(language, 'publicServices')} onPress={() => openPublicServices()} secondary fontFamily={font} />
-              <ActionButton title={language === 'bn' ? 'লগ আউট' : 'Sign out'} onPress={() => { signOutCustomer(); setPassword(''); setCustomerSession(null); setCustomerBills([]); setProfile(null); setNotifications([]); setSiteLocation(''); setPaymentPhone(''); setIsGuest(false); setScreen('welcome'); }} secondary fontFamily={font} />
+              <ActionButton title={language === 'bn' ? 'লগ আউট' : 'Sign out'} onPress={() => { signOutCustomer(); setPassword(''); setCustomerSession(null); setCustomerBills([]); setProfile(null); setNotifications([]); setSiteLocation(''); setPaymentPhone(''); setScreen('welcome'); }} secondary fontFamily={font} />
             </Card>
           </View>
         );
@@ -1385,44 +1427,31 @@ export default function App() {
 
   if (screen === 'welcome') {
     return (
-      <View style={styles.welcomeRoot}>
-        <StatusBar style="light" />
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          {screenContent}
-        </ScrollView>
+      <View style={{ flex: 1 }}>
+        <PublicApp
+          language={language}
+          onLanguageChange={setLanguage}
+          onSignIn={beginSignIn}
+          onSignUp={() => { setPassword(''); setShowPassword(false); setScreen('sign-up'); }}
+        />
         {notice ? <TextLabel style={styles.notice}>{notice}</TextLabel> : null}
       </View>
     );
   }
 
-  if (screen === 'public-services' && isGuest) {
+  if (screen === 'public-info') {
     return (
-      <View style={styles.guestRoot}>
-        <StatusBar style="dark" />
-        <View style={[styles.guestShell, tablet && !wide && { maxWidth: 720 }, wide && styles.appShellWide]}>
-          <View style={[styles.header, styles.guestHeader, wide && styles.headerWide]}>
-            <Pressable onPress={() => setGuestSection('home')} accessibilityLabel={translateGuest(language, 'guestWelcome')}>
-              <Image source={require('./assets/cwasa-logo.png')} style={styles.headerLogo} resizeMode="contain" />
-            </Pressable>
-            <View style={styles.brandText}>
-              <TextLabel bold style={styles.brandName}>CHATTOGRAM WASA</TextLabel>
-            </View>
-            <View style={styles.headerActions}>
-              <Pressable onPress={() => setLanguage((current) => current === 'en' ? 'bn' : 'en')} style={styles.languageButton} accessibilityLabel={t('language')}>
-                <TextLabel style={styles.languageText}>{language === 'en' ? 'বাং' : 'EN'}</TextLabel>
-              </Pressable>
-              <Pressable onPress={beginSignIn} style={styles.guestSignInButton}>
-                <TextLabel style={styles.guestSignInText}>{language === 'bn' ? 'সাইন ইন' : 'Sign in'}</TextLabel>
-              </Pressable>
-            </View>
-          </View>
-          <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]} keyboardShouldPersistTaps="handled">
-            {notice ? <Pressable onPress={() => setNotice('')}><TextLabel style={styles.notice}>{notice}　×</TextLabel></Pressable> : null}
-            <View style={contentFrame}>{screenContent}</View>
-            <View style={styles.footer}>
-            </View>
-          </ScrollView>
-        </View>
+      <View style={{ flex: 1 }}>
+        <PublicApp
+          embedded
+          language={language}
+          onLanguageChange={setLanguage}
+          onSignIn={beginSignIn}
+          onSignUp={() => setScreen('home')}
+          onExit={() => setScreen('home')}
+          onReportComplaint={() => setScreen('complaint-form')}
+        />
+        {notice ? <TextLabel style={styles.notice}>{notice}</TextLabel> : null}
       </View>
     );
   }
@@ -1432,7 +1461,7 @@ export default function App() {
       <StatusBar style="dark" />
       <View style={[styles.appShell, tablet && !wide && { maxWidth: 720 }, wide && styles.appShellWide]}>
         {header}
-        <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide]} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.content, wide && styles.contentWide, authScreen && { flexGrow: 1, justifyContent: 'center', padding: 24 }]} keyboardShouldPersistTaps="handled">
           {notice ? <Pressable onPress={() => setNotice('')}><TextLabel style={styles.notice}>{notice}　×</TextLabel></Pressable> : null}
           <View style={contentFrame}>{screenContent}</View>
           <View style={styles.footer}>

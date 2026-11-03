@@ -220,7 +220,7 @@ function normaliseProfile(raw: unknown): CustomerProfile {
     mobileNo: pickText(profile, ['mobileNo', 'mobile', 'phoneNo', 'phone']),
     meterNo: pickText(profile, ['meterNo', 'meterNumber']),
     wardNo: pickText(profile, ['wardNo', 'ward']),
-    propertyType: pickText(profile, ['propertyType', 'category']),
+    propertyType: pickText(profile, ['propertyType', 'category', 'customerCategory', 'connectionCategory', 'categoryName', 'consumerCategory', 'customerType']),
     connectionSize: pickText(profile, ['connectionSizeCode', 'connectionSize', 'connectionSizeInch', 'wconsize', 'WCONSIZE', 'wConSize', 'accountConnectionSize', 'size']),
   };
 }
@@ -258,10 +258,11 @@ export async function registerCustomer(
   accountNo: string,
   verificationContact: { email: string } | { phone: string },
   password: string,
+  nid: string,
 ): Promise<void> {
   await rawRequest<unknown>('/customer/set-password', {
     method: 'POST',
-    body: { accountNo, ...verificationContact, password },
+    body: { accountNo, ...verificationContact, nid, password },
   });
 }
 
