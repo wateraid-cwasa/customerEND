@@ -1,6 +1,7 @@
 // Public (no sign-in) area of the CWASA app. Static information only.
 // Login and Register hand over to the existing sign-in and create-account screens.
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import {
   Animated,
   BackHandler,
@@ -12,6 +13,7 @@ import {
   StatusBar as RNStatusBar,
   StyleSheet,
   Text,
+  TextInput,
   View,
   useWindowDimensions,
   type ScrollViewInstance,
@@ -20,6 +22,8 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as SecureStore from 'expo-secure-store';
+import * as ImagePicker from 'expo-image-picker';
+import * as Location from 'expo-location';
 import { colors, fontFamilyForText } from './theme';
 import type { Language } from './translation';
 import {
@@ -61,6 +65,7 @@ type Props = {
   embedded?: boolean;
   onExit?: () => void;
   onReportComplaint?: () => void;
+  onSubmitReport?: (report: PublicReport) => Promise<void> | void;
 };
 
 type Tab = 'home' | 'complaint' | 'emergency' | 'about';
@@ -94,9 +99,34 @@ const open = (url: string) => {
 const callNumber = (number: string) => open(`tel:${number}`);
 const mapUrl = (query: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 
-export default function PublicApp({ language, onLanguageChange, onSignIn, onSignUp, embedded = false, onExit, onReportComplaint }: Props) {
+type IconName = ComponentProps<typeof Ionicons>['name'];
+function Icon({ name, size = 20, color = colors.ink }: { name: IconName; size?: number; color?: string }) {
+  return <Ionicons name={name} size={size} color={color} />;
+}
+
+export type PublicReport = { type: string; name: string; contact: string; description: string; location: string; photoUri: string | null };
+
+const REPORT_TYPES: [string, string, string][] = [
+  ['lowPressure', 'Low pressure', 'কম চাপ'],
+  ['noWater', 'No water', 'পানি নেই'],
+  ['leakage', 'Leakage', 'লিকেজ'],
+  ['qualityIssue', 'Water quality', 'পানির মান'],
+  ['overbilling', 'Billing issue', 'বিলের সমস্যা'],
+  ['other', 'Other', 'অন্যান্য'],
+];
+
+export default function PublicApp({ language, onLanguageChange, onSignIn, onSignUp, embedded = false, onExit, onReportComplaint, onSubmitReport }: Props) {
   const [splash, setSplash] = useState(!splashShown && !embedded);
   const [stack, setStack] = useState<string[]>(['home']);
+  const [rType, setRType] = useState('noWater');
+  const [rName, setRName] = useState('');
+  const [rContact, setRContact] = useState('');
+  const [rDesc, setRDesc] = useState('');
+  const [rPlace, setRPlace] = useState('');
+  const [rPhoto, setRPhoto] = useState<string | null>(null);
+  const [rError, setRError] = useState('');
+  const [rRef, setRRef] = useState('');
+  const [rBusy, setRBusy] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [favourites, setFavourites] = useState<string[]>([]);
   const scroller = useRef<ScrollViewInstance>(null);
@@ -175,7 +205,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
     <T bold={bold} style={style} lines={lines}>{pick(entry, language)}</T>
   );
 
-  function Button({ label, onPress, kind = 'primary', small }: { label: string; onPress: () => void; kind?: 'primary' | 'outline' | 'light' | 'dark'; small?: boolean }) {
+  function Button({ label, onPress, kind = 'primary', small, icon }: { label: string; onPress: () => void; kind?: 'primary' | 'outline' | 'light' | 'dark'; small?: boolean; icon?: IconName }) {
     const bg = kind === 'primary' ? colors.blue : kind === 'dark' ? '#FFFFFF' : kind === 'light' ? colors.paleBlue : colors.white;
     const fg = kind === 'primary' ? colors.white : colors.blue;
     return (
@@ -185,7 +215,10 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
         accessibilityLabel={label}
         style={[s.button, small && s.buttonSmall, { backgroundColor: bg, borderColor: kind === 'outline' ? colors.blue : bg }]}
       >
-        <T bold style={{ color: fg, fontSize: small ? 14 : 16 }}>{label}</T>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {icon ? <Icon name={icon} size={small ? 16 : 18} color={fg} /> : null}
+          <T bold style={{ color: fg, fontSize: small ? 14 : 16 }}>{label}</T>
+        </View>
       </Pressable>
     );
   }
@@ -230,7 +263,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
 
   const HelplineStrip = () => (
     <Pressable onPress={() => callNumber(HELPLINE)} style={s.helplineCard} accessibilityRole="button" accessibilityLabel={pick(ui.helplineLine, language)}>
-      <View style={s.helplineIcon}><Text style={{ fontSize: 20 }}>☏</Text></View>
+      <View style={s.helplineIcon}><Icon name="headset-outline" size={22} color={colors.blue} /></View>
       <View style={{ flex: 1 }}>
         <B entry={ui.helpline} style={{ color: colors.muted, fontSize: 13, lineHeight: 18 }} />
         <B entry={ui.helplineLine} bold style={{ color: colors.blue }} />
@@ -249,7 +282,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
 
   const PhoneRow = ({ number, label }: { number: string; label?: Bi }) => (
     <Pressable onPress={() => callNumber(number)} style={s.phoneRow} accessibilityRole="button" accessibilityLabel={`${pick(ui.call, language)} ${number}`}>
-      <Text style={{ fontSize: 16, color: colors.blue }}>☏</Text>
+      <Icon name="call-outline" size={18} color={colors.blue} />
       <View style={{ flex: 1 }}>
         {label ? <B entry={label} /> : null}
       </View>
@@ -271,7 +304,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
             <B entry={title} bold style={{ fontSize: 17 }} />
             {note ? <B entry={note} style={{ color: colors.muted, fontSize: 13, lineHeight: 18 }} /> : null}
           </View>
-          <T style={{ color: colors.muted, fontSize: 18 }}>{isOpen ? '▴' : '▾'}</T>
+          <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
         </Pressable>
         {isOpen ? <View style={{ paddingBottom: 12 }}>{children}</View> : null}
       </Card>
@@ -315,7 +348,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
           {office.phones.map((p) => <PhoneRow key={p} number={p} />)}
           {office.email ? (
             <Pressable onPress={() => open(`mailto:${office.email}`)} style={s.phoneRow} accessibilityRole="button">
-              <Text style={{ fontSize: 16, color: colors.blue }}>✉</Text>
+              <Icon name="mail-outline" size={18} color={colors.blue} />
               <T style={{ flex: 1 }}>{pick(ui.email, language)}</T>
               <T bold style={{ color: colors.blue }}>{office.email}</T>
             </Pressable>
@@ -346,12 +379,12 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
             hitSlop={10}
             style={s.starButton}
           >
-            <Text style={{ fontSize: 22, color: fav ? '#FFC809' : 'rgba(255,255,255,0.7)' }}>{fav ? '★' : '☆'}</Text>
+            <Icon name={fav ? 'star' : 'star-outline'} size={24} color={fav ? '#FFC809' : 'rgba(255,255,255,0.85)'} />
           </Pressable>
         </View>
         <View style={s.contactBottom}>
           <T bold style={{ color: colors.white, fontSize: 24, lineHeight: 30 }}>{d(contact.number)}</T>
-          <Button small kind="dark" label={`☏  ${pick(ui.call, language)}`} onPress={() => callNumber(contact.number)} />
+          <Button small kind="dark" icon="call-outline" label={pick(ui.call, language)} onPress={() => callNumber(contact.number)} />
         </View>
       </View>
     );
@@ -367,12 +400,12 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
       </View>
       <View style={wide ? { flexDirection: 'row', gap: 16, alignItems: 'stretch' } : { gap: 16 }}>
       <Pressable onPress={() => (embedded && onReportComplaint ? onReportComplaint() : selectTab('complaint'))} style={[s.reportCard, wide && { flex: 1 }]} accessibilityRole="button" accessibilityLabel={pick(ui.reportTitle, language)}>
-        <View style={s.reportIcon}><Text style={{ fontSize: 22 }}>📣</Text></View>
+        <View style={s.reportIcon}><Icon name="megaphone-outline" size={24} color={colors.red} /></View>
         <View style={{ flex: 1 }}>
           <B entry={ui.reportTitle} bold style={{ fontSize: 17 }} />
           <B entry={ui.reportBody} style={{ color: colors.muted, fontSize: 14, lineHeight: 20 }} />
         </View>
-        <T bold style={{ color: colors.blue, fontSize: 22 }}>›</T>
+        <Icon name="chevron-forward" size={22} color={colors.blue} />
       </Pressable>
       <View style={wide ? { flex: 1 } : undefined}><HelplineStrip /></View>
       </View>
@@ -381,7 +414,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
         <View style={[s.grid, { justifyContent: 'center' }]}>
           {homeTiles.filter((tile) => tile.id === 'faq').map((tile) => (
             <Pressable key={tile.id} onPress={() => go(tile.id)} style={[s.tile, { flexGrow: 0, flexBasis: wide ? '30%' : '60%', alignItems: 'center' }]} accessibilityRole="button" accessibilityLabel={pick(tile.title, language)}>
-              <View style={s.tileIcon}><Text style={{ fontSize: 22 }}>{tile.icon}</Text></View>
+              <View style={s.tileIcon}><Icon name={tile.icon as IconName} size={24} color={colors.blue} /></View>
               <B entry={tile.title} bold style={{ fontSize: 15, lineHeight: 20, textAlign: 'center' }} />
               <B entry={tile.hint} style={{ color: colors.muted, fontSize: 13, lineHeight: 18, textAlign: 'center' }} />
             </Pressable>
@@ -391,17 +424,125 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
     </View>
   );
 
+  const L = (en: string, bn: string) => (language === 'bn' ? bn : en);
+
+  const useMyLocation = async () => {
+    try {
+      const perm = await Location.requestForegroundPermissionsAsync();
+      if (perm.status !== 'granted') { setRError(L('Location permission was not given. Please type the location.', 'অবস্থানের অনুমতি দেওয়া হয়নি। অনুগ্রহ করে অবস্থান লিখুন।')); return; }
+      const pos = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = pos.coords;
+      let text = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+      try {
+        const places = await Location.reverseGeocodeAsync({ latitude, longitude });
+        const p = places[0];
+        const line = p ? [p.name, p.street, p.district ?? p.subregion, p.city].filter(Boolean).join(', ') : '';
+        if (line) text = `${line} (${text})`;
+      } catch { /* keep coordinates only */ }
+      setRPlace(text);
+      setRError('');
+    } catch {
+      setRError(L('Could not get your location. Please type it.', 'অবস্থান পাওয়া যায়নি। অনুগ্রহ করে লিখুন।'));
+    }
+  };
+
+  const pickPhoto = async (fromCamera: boolean) => {
+    try {
+      if (fromCamera) {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) { setRError(L('Camera permission was not given.', 'ক্যামেরার অনুমতি দেওয়া হয়নি।')); return; }
+      }
+      const result = fromCamera
+        ? await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.6 })
+        : await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.6 });
+      if (!result.canceled && result.assets[0]) { setRPhoto(result.assets[0].uri); setRError(''); }
+    } catch {
+      setRError(L('Could not add the photo.', 'ছবি যোগ করা যায়নি।'));
+    }
+  };
+
+  const submitReport = () => {
+    const contact = rContact.trim();
+    const digits = contact.replace(/[^0-9]/g, '');
+    const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact);
+    const validPhone = !contact.includes('@') && digits.length >= 10 && digits.length <= 14;
+    if (rName.trim().length < 2) { setRError(L('Please enter your name.', 'অনুগ্রহ করে আপনার নাম লিখুন।')); return; }
+    if (!validEmail && !validPhone) { setRError(L('Please enter a valid email or phone number.', 'অনুগ্রহ করে সঠিক ইমেইল বা ফোন নম্বর দিন।')); return; }
+    if (rDesc.trim().length < 12) { setRError(L('Please give a little more detail about the problem.', 'সমস্যাটি সম্পর্কে আরও কিছু লিখুন।')); return; }
+    if (rPlace.trim().length < 3) { setRError(L('Please enter the location.', 'অনুগ্রহ করে অবস্থান লিখুন।')); return; }
+    setRBusy(true);
+    const report = { type: rType, name: rName.trim(), contact, description: rDesc.trim(), location: rPlace.trim(), photoUri: rPhoto };
+    Promise.resolve(onSubmitReport ? onSubmitReport(report) : undefined)
+      .then(() => { setRRef(`CWASA-PUB-2026-${Math.floor(1000 + Math.random() * 9000)}`); setRError(''); })
+      .catch(() => setRError(L('Could not send the report. Please try again or call 16129.', 'অভিযোগ পাঠানো যায়নি। আবার চেষ্টা করুন বা ১৬১২৯ নম্বরে কল করুন।')))
+      .finally(() => setRBusy(false));
+  };
+
   const renderComplaint = () => (
     <View style={{ gap: 16 }}>
       <PageHeaderNoBack title={ui.reportTitle} />
-      <Card>
-        <View style={s.reportIconLarge}><Text style={{ fontSize: 28 }}>📣</Text></View>
-        <B entry={ui.complaintGate} style={{ marginTop: 12 }} />
-        <View style={{ gap: 10, marginTop: 16 }}>
-          <Button label={pick(ui.logIn, language)} onPress={onSignIn} />
-          <Button kind="outline" label={pick(ui.register, language)} onPress={onSignUp} />
-        </View>
-      </Card>
+      {rRef ? (
+        <Card>
+          <View style={s.reportIconLarge}><Icon name="checkmark-circle-outline" size={30} color={colors.green} /></View>
+          <T bold style={{ fontSize: 18, marginTop: 12 }}>{L('Report received', 'অভিযোগ গ্রহণ করা হয়েছে')}</T>
+          <T style={{ marginTop: 6, color: colors.muted }}>{L('Keep this reference number. Our team will contact you using the details you gave.', 'এই রেফারেন্স নম্বর সংরক্ষণ করুন। আপনার দেওয়া তথ্য দিয়ে আমাদের দল যোগাযোগ করবে।')}</T>
+          <T bold style={{ fontSize: 20, marginTop: 10, color: colors.blue }}>{rRef}</T>
+          <View style={{ marginTop: 14 }}>
+            <Button kind="outline" label={L('Report another issue', 'আরেকটি সমস্যা জানান')} onPress={() => { setRRef(''); setRDesc(''); setRPlace(''); setRPhoto(null); setRError(''); }} />
+          </View>
+        </Card>
+      ) : (
+        <Card>
+          <View style={s.reportIconLarge}><Icon name="megaphone-outline" size={30} color={colors.red} /></View>
+          <T bold style={{ fontSize: 18, marginTop: 12 }}>{L('Submit complaint', 'অভিযোগ জমা দিন')}</T>
+          <T style={{ marginTop: 4, color: colors.muted }}>{L('Tell us what is happening and our team will help. You do not need to log in.', 'কী ঘটছে আমাদের জানান, আমাদের দল সাহায্য করবে। লগইন করার প্রয়োজন নেই।')}</T>
+
+          <T bold style={s.rLabel}>{L('Complaint type', 'অভিযোগের ধরন')}</T>
+          <View style={s.rChips}>
+            {REPORT_TYPES.map(([id, en, bn]) => (
+              <Pressable key={id} onPress={() => setRType(id)} style={[s.rChip, rType === id && s.rChipOn]} accessibilityRole="button" accessibilityState={{ selected: rType === id }}>
+                <T bold={rType === id} style={{ color: rType === id ? colors.white : colors.ink, fontSize: 14 }}>{L(en, bn)}</T>
+              </Pressable>
+            ))}
+          </View>
+
+          <T bold style={s.rLabel}>{L('Your name', 'আপনার নাম')}</T>
+          <TextInput value={rName} onChangeText={setRName} placeholder={L('Full name', 'পূর্ণ নাম')} placeholderTextColor={colors.muted} style={[s.rInput, { fontFamily: fontFamilyForText(rName || L('Full name', 'পূর্ণ নাম'), false, language) }]} />
+
+          <T bold style={s.rLabel}>{L('Email or phone number', 'ইমেইল বা ফোন নম্বর')}</T>
+          <TextInput value={rContact} onChangeText={setRContact} placeholder={L('name@example.com or 01XXXXXXXXX', 'name@example.com বা 01XXXXXXXXX')} placeholderTextColor={colors.muted} autoCapitalize="none" keyboardType="email-address" style={[s.rInput, { fontFamily: fontFamilyForText(rContact || 'a', false, language) }]} />
+
+          <T bold style={s.rLabel}>{L('Description', 'বিবরণ')}</T>
+          <TextInput value={rDesc} onChangeText={setRDesc} placeholder={L('Describe the problem', 'সমস্যাটি লিখুন')} placeholderTextColor={colors.muted} multiline style={[s.rInput, { minHeight: 110, textAlignVertical: 'top', fontFamily: fontFamilyForText(rDesc || L('Describe the problem', 'সমস্যাটি লিখুন'), false, language) }]} />
+
+          <T bold style={s.rLabel}>{L('Location', 'অবস্থান')}</T>
+          <TextInput value={rPlace} onChangeText={setRPlace} placeholder={L('Area, road or landmark', 'এলাকা, রাস্তা বা নিকটবর্তী স্থান')} placeholderTextColor={colors.muted} style={[s.rInput, { fontFamily: fontFamilyForText(rPlace || L('Area, road or landmark', 'এলাকা, রাস্তা বা নিকটবর্তী স্থান'), false, language) }]} />
+          <View style={{ marginTop: 8, alignSelf: 'flex-start' }}>
+            <Button small kind="light" icon="locate-outline" label={L('Use my location', 'আমার অবস্থান ব্যবহার করুন')} onPress={useMyLocation} />
+          </View>
+
+          <T bold style={s.rLabel}>{L('Photo (optional)', 'ছবি (ঐচ্ছিক)')}</T>
+          {rPhoto ? (
+            <View style={{ alignSelf: 'flex-start' }}>
+              <Image source={{ uri: rPhoto }} style={s.rPhoto} />
+              <Pressable onPress={() => setRPhoto(null)} style={{ paddingVertical: 8 }}><T bold style={{ color: colors.red }}>{L('Remove photo', 'ছবি মুছুন')}</T></Pressable>
+            </View>
+          ) : (
+            <View style={{ flexDirection: 'row', gap: 10, flexWrap: 'wrap' }}>
+              {Platform.OS !== 'web' ? <Button small kind="light" icon="camera-outline" label={L('Camera', 'ক্যামেরা')} onPress={() => pickPhoto(true)} /> : null}
+              <Button small kind="light" icon="image-outline" label={L('Choose photo', 'ছবি বাছুন')} onPress={() => pickPhoto(false)} />
+            </View>
+          )}
+
+          {rError ? <T bold style={{ color: colors.red, marginTop: 14 }}>{rError}</T> : null}
+          <View style={{ gap: 10, marginTop: 18 }}>
+            <Button label={rBusy ? L('Sending...', 'পাঠানো হচ্ছে...') : L('Send report', 'অভিযোগ পাঠান')} onPress={submitReport} />
+          </View>
+          <Pressable onPress={onSignIn} style={{ marginTop: 14, alignItems: 'center' }} accessibilityRole="link">
+            <T bold style={{ color: colors.blue }}>{L('Have an account? Log in', 'অ্যাকাউন্ট আছে? লগইন করুন')}</T>
+          </Pressable>
+        </Card>
+      )}
       <Card>
         <B entry={ui.complaintWays} />
         <View style={{ marginTop: 8 }}>
@@ -589,7 +730,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
               >
                 <View style={s.stepBadge}><T bold style={{ color: colors.white, fontSize: 13, lineHeight: 18 }}>{d(String(i + 1))}</T></View>
                 <B entry={item.q} bold style={{ flex: 1 }} />
-                <T style={{ color: colors.muted, fontSize: 18 }}>{isOpen ? '▴' : '▾'}</T>
+                <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
               </Pressable>
               {isOpen ? <B entry={item.a} style={{ paddingBottom: 12, color: colors.muted }} /> : null}
             </Card>
@@ -615,7 +756,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
                 style={s.faqHead}
               >
                 <B entry={sec.title} bold style={{ flex: 1, fontSize: 17 }} />
-                <T style={{ color: colors.muted, fontSize: 18 }}>{isOpen ? '▴' : '▾'}</T>
+                <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
               </Pressable>
               {isOpen ? (
                 <View style={{ paddingBottom: 12 }}>
@@ -683,10 +824,10 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
   if (splash) return <Splash language={language} />;
 
   const allTabs: { id: Tab; icon: string; label: Bi }[] = [
-    { id: 'home', icon: '⌂', label: ui.home },
-    { id: 'complaint', icon: '✎', label: ui.reportComplaint },
-    { id: 'emergency', icon: '☏', label: ui.emergency },
-    { id: 'about', icon: 'ⓘ', label: ui.about },
+    { id: 'home', icon: 'home-outline', label: ui.home },
+    { id: 'complaint', icon: 'chatbox-outline', label: ui.reportComplaint },
+    { id: 'emergency', icon: 'headset-outline', label: ui.emergency },
+    { id: 'about', icon: 'information-circle-outline', label: ui.about },
   ];
   // Signed-in customers get one Home tab that returns them to their own interface.
   const tabs = embedded ? allTabs.slice(0, 1) : allTabs;
@@ -728,7 +869,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
             accessibilityState={{ expanded: menuOpen }}
             style={s.iconButton}
           >
-            <Text style={{ fontSize: 24, color: colors.ink }}>{menuOpen ? '✕' : '☰'}</Text>
+            <Icon name={menuOpen ? 'close' : 'menu'} size={28} color={colors.ink} />
           </Pressable> : null}
           <Pressable onPress={() => selectTab('home')} style={wide ? undefined : { flex: 1 }} accessibilityRole="button" accessibilityLabel={pick(ui.home, language)}>
             <Image source={require('./assets/cwasa-logo-wide.png')} style={s.logo} resizeMode="contain" />
@@ -744,7 +885,10 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
                 );
               })}
               <Pressable onPress={() => setMenuOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: menuOpen }} style={s.navLink}>
-                <T style={{ fontSize: 14, lineHeight: 20 }}>{`${pick({ en: 'More', bn: 'আরও' }, language)} ▾`}</T>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <T style={{ fontSize: 14, lineHeight: 20 }}>{pick({ en: 'More', bn: 'আরও' }, language)}</T>
+                  <Icon name="chevron-down" size={16} color={colors.ink} />
+                </View>
               </Pressable>
             </View>
           ) : null}
@@ -812,7 +956,7 @@ export default function PublicApp({ language, onLanguageChange, onSignIn, onSign
                 style={s.tab}
               >
                 <View style={[s.tabIcon, (on || active) && { backgroundColor: colors.paleBlue }]}>
-                  <Text style={{ fontSize: 20, color: on ? colors.blue : colors.muted }}>{tab.icon}</Text>
+                  <Icon name={tab.icon as IconName} size={22} color={on ? colors.blue : colors.muted} />
                 </View>
                 <T bold={on} style={{ fontSize: 11, lineHeight: 15, color: on ? colors.blue : colors.muted, textAlign: 'center' }} lines={1}>{pick(tab.label, language)}</T>
               </Pressable>
@@ -964,6 +1108,12 @@ const s = StyleSheet.create({
   },
   tileIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: colors.paleBlue, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
   card: { backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
+  rLabel: { marginTop: 16, marginBottom: 6, fontSize: 14 },
+  rInput: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16, color: colors.ink, backgroundColor: colors.white },
+  rChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  rChip: { borderWidth: 1, borderColor: colors.border, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 9, backgroundColor: colors.white },
+  rChipOn: { backgroundColor: colors.blue, borderColor: colors.blue },
+  rPhoto: { width: 160, height: 160, borderRadius: 12 },
   listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   listDivider: { borderTopWidth: 1, borderTopColor: colors.border },
   pageTitle: { fontSize: 24, lineHeight: 32 },

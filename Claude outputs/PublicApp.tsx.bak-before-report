@@ -1,0 +1,1007 @@
+// Public (no sign-in) area of the CWASA app. Static information only.
+// Login and Register hand over to the existing sign-in and create-account screens.
+import { useEffect, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  Animated,
+  BackHandler,
+  Image,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StatusBar as RNStatusBar,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  type ScrollViewInstance,
+  type StyleProp,
+  type TextStyle,
+} from 'react-native';
+import { StatusBar } from 'expo-status-bar';
+import * as SecureStore from 'expo-secure-store';
+import { colors, fontFamilyForText } from './theme';
+import type { Language } from './translation';
+import {
+  HELPLINE,
+  PDF_BASE,
+  aboutApp,
+  aboutSections,
+  billIntro,
+  billSections,
+  emergencyContacts,
+  faqItems,
+  formGroups,
+  headOffice,
+  homeTiles,
+  localDigits,
+  nationalHotlines,
+  officials,
+  payWays,
+  pick,
+  services,
+  tariffTables,
+  ui,
+  zoneContacts,
+  zoneOffices,
+  type Bi,
+  type Contact,
+  type DocItem,
+  type Office,
+  type Service,
+  type TariffTable,
+} from './publicContent';
+
+type Props = {
+  language: Language;
+  onLanguageChange: (language: Language) => void;
+  onSignIn: () => void;
+  onSignUp: () => void;
+  // Used when a signed-in customer opens this area from the info button.
+  embedded?: boolean;
+  onExit?: () => void;
+  onReportComplaint?: () => void;
+};
+
+type Tab = 'home' | 'complaint' | 'emergency' | 'about';
+const TAB_ROUTES: Tab[] = ['home', 'complaint', 'emergency', 'about'];
+
+let splashShown = false;
+const FAV_KEY = 'cwasa_public_favourites_v1';
+
+async function loadFavourites(): Promise<string[]> {
+  try {
+    const raw = Platform.OS === 'web' ? globalThis.localStorage?.getItem(FAV_KEY) : await SecureStore.getItemAsync(FAV_KEY);
+    const parsed = raw ? JSON.parse(raw) : [];
+    return Array.isArray(parsed) ? parsed.filter((v) => typeof v === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+async function saveFavourites(values: string[]): Promise<void> {
+  try {
+    const raw = JSON.stringify(values);
+    if (Platform.OS === 'web') globalThis.localStorage?.setItem(FAV_KEY, raw);
+    else await SecureStore.setItemAsync(FAV_KEY, raw);
+  } catch {
+    // Storage may be unavailable. Favourites then last for this visit only.
+  }
+}
+
+const open = (url: string) => {
+  Linking.openURL(url).catch(() => undefined);
+};
+const callNumber = (number: string) => open(`tel:${number}`);
+const mapUrl = (query: string) => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+
+type IconName = ComponentProps<typeof Ionicons>['name'];
+function Icon({ name, size = 20, color = colors.ink }: { name: IconName; size?: number; color?: string }) {
+  return <Ionicons name={name} size={size} color={color} />;
+}
+
+export default function PublicApp({ language, onLanguageChange, onSignIn, onSignUp, embedded = false, onExit, onReportComplaint }: Props) {
+  const [splash, setSplash] = useState(!splashShown && !embedded);
+  const [stack, setStack] = useState<string[]>(['home']);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [favourites, setFavourites] = useState<string[]>([]);
+  const scroller = useRef<ScrollViewInstance>(null);
+  const { width: screenWidth } = useWindowDimensions();
+  const wide = screenWidth >= 900;
+
+  const route = stack[stack.length - 1];
+  const activeTab: Tab = (TAB_ROUTES as string[]).includes(route) ? (route as Tab) : 'home';
+  const d = (value: string) => localDigits(value, language);
+
+  useEffect(() => {
+    loadFavourites().then(setFavourites);
+  }, []);
+
+  useEffect(() => {
+    if (!splash) return undefined;
+    const timer = setTimeout(() => {
+      splashShown = true;
+      setSplash(false);
+    }, 2200);
+    return () => clearTimeout(timer);
+  }, [splash]);
+
+  useEffect(() => {
+    scroller.current?.scrollTo({ y: 0, animated: false });
+  }, [route]);
+
+  useEffect(() => {
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (menuOpen) {
+        setMenuOpen(false);
+        return true;
+      }
+      if (stack.length > 1) {
+        setStack((s) => s.slice(0, -1));
+        return true;
+      }
+      if (embedded && onExit) {
+        onExit();
+        return true;
+      }
+      return false;
+    });
+    return () => sub.remove();
+  }, [stack, menuOpen, embedded, onExit]);
+
+  const go = (next: string) => {
+    setMenuOpen(false);
+    setStack((s) => [...s, next]);
+  };
+  const back = () => setStack((s) => (s.length > 1 ? s.slice(0, -1) : s));
+  const selectTab = (tab: Tab) => {
+    setMenuOpen(false);
+    setStack([tab]);
+  };
+
+  const favKey = (c: Contact) => `${c.name.en}|${c.number}`;
+  const toggleFav = (c: Contact) => {
+    setFavourites((current) => {
+      const key = favKey(c);
+      const next = current.includes(key) ? current.filter((k) => k !== key) : [...current, key];
+      saveFavourites(next);
+      return next;
+    });
+  };
+
+  // ---------------------------------------------------------------- helpers
+  function T({ children, bold, style, lines }: { children: string; bold?: boolean; style?: StyleProp<TextStyle>; lines?: number }) {
+    return (
+      <Text numberOfLines={lines} style={[{ fontFamily: fontFamilyForText(children, !!bold, language), color: colors.ink, fontSize: 15, lineHeight: 22 }, style]}>
+        {children}
+      </Text>
+    );
+  }
+  const B = ({ entry, bold, style, lines }: { entry: Bi; bold?: boolean; style?: StyleProp<TextStyle>; lines?: number }) => (
+    <T bold={bold} style={style} lines={lines}>{pick(entry, language)}</T>
+  );
+
+  function Button({ label, onPress, kind = 'primary', small, icon }: { label: string; onPress: () => void; kind?: 'primary' | 'outline' | 'light' | 'dark'; small?: boolean; icon?: IconName }) {
+    const bg = kind === 'primary' ? colors.blue : kind === 'dark' ? '#FFFFFF' : kind === 'light' ? colors.paleBlue : colors.white;
+    const fg = kind === 'primary' ? colors.white : colors.blue;
+    return (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={[s.button, small && s.buttonSmall, { backgroundColor: bg, borderColor: kind === 'outline' ? colors.blue : bg }]}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+          {icon ? <Icon name={icon} size={small ? 16 : 18} color={fg} /> : null}
+          <T bold style={{ color: fg, fontSize: small ? 14 : 16 }}>{label}</T>
+        </View>
+      </Pressable>
+    );
+  }
+
+  const Card = ({ children, style }: { children: ReactNode; style?: StyleProp<object> }) => <View style={[s.card, style]}>{children}</View>;
+
+  const SectionTitle = ({ entry }: { entry: Bi }) => <B entry={entry} bold style={s.sectionTitle} />;
+
+  const Bullets = ({ items }: { items: Bi[] }) => (
+    <View style={{ gap: 8 }}>
+      {items.map((it, i) => (
+        <View key={i} style={s.bulletRow}>
+          <View style={s.bulletDot} />
+          <B entry={it} style={{ flex: 1 }} />
+        </View>
+      ))}
+    </View>
+  );
+
+  const Steps = ({ items }: { items: Bi[] }) => (
+    <View style={{ gap: 10 }}>
+      {items.map((it, i) => (
+        <View key={i} style={s.bulletRow}>
+          <View style={s.stepBadge}>
+            <T bold style={{ color: colors.white, fontSize: 13, lineHeight: 18 }}>{d(String(i + 1))}</T>
+          </View>
+          <B entry={it} style={{ flex: 1 }} />
+        </View>
+      ))}
+    </View>
+  );
+
+  const PageHeader = ({ title, subtitle }: { title: Bi; subtitle?: Bi }) => (
+    <View style={{ gap: 6, marginBottom: 14 }}>
+      <Pressable onPress={back} accessibilityRole="button" accessibilityLabel={pick(ui.back, language)} style={s.backRow} hitSlop={8}>
+        <T bold style={{ color: colors.blue }}>{`‹  ${pick(ui.back, language)}`}</T>
+      </Pressable>
+      <B entry={title} bold style={s.pageTitle} />
+      {subtitle ? <B entry={subtitle} style={{ color: colors.muted }} /> : null}
+    </View>
+  );
+
+  const HelplineStrip = () => (
+    <Pressable onPress={() => callNumber(HELPLINE)} style={s.helplineCard} accessibilityRole="button" accessibilityLabel={pick(ui.helplineLine, language)}>
+      <View style={s.helplineIcon}><Icon name="headset-outline" size={22} color={colors.blue} /></View>
+      <View style={{ flex: 1 }}>
+        <B entry={ui.helpline} style={{ color: colors.muted, fontSize: 13, lineHeight: 18 }} />
+        <B entry={ui.helplineLine} bold style={{ color: colors.blue }} />
+      </View>
+      <T bold style={{ color: colors.blue, fontSize: 22, lineHeight: 28 }}>{d(HELPLINE)}</T>
+    </Pressable>
+  );
+
+  const DocRow = ({ doc }: { doc: DocItem }) => (
+    <View style={s.docRow}>
+      <View style={s.pdfBadge}><T bold style={{ color: colors.red, fontSize: 11, lineHeight: 14 }}>PDF</T></View>
+      <B entry={doc.name} style={{ flex: 1 }} />
+      <Button small kind="light" label={pick(ui.download, language)} onPress={() => open(PDF_BASE + doc.file)} />
+    </View>
+  );
+
+  const PhoneRow = ({ number, label }: { number: string; label?: Bi }) => (
+    <Pressable onPress={() => callNumber(number)} style={s.phoneRow} accessibilityRole="button" accessibilityLabel={`${pick(ui.call, language)} ${number}`}>
+      <Icon name="call-outline" size={18} color={colors.blue} />
+      <View style={{ flex: 1 }}>
+        {label ? <B entry={label} /> : null}
+      </View>
+      <T bold style={{ color: colors.blue }}>{d(number)}</T>
+    </Pressable>
+  );
+
+  function Collapse({ title, note, children, flush }: { title: Bi; note?: Bi; children: ReactNode; flush?: boolean }) {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <Card style={{ paddingVertical: 4, ...(flush ? { paddingHorizontal: 0, overflow: 'hidden' as const } : null) }}>
+        <Pressable
+          onPress={() => setIsOpen((v) => !v)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: isOpen }}
+          style={[s.faqHead, flush && { paddingHorizontal: 16 }]}
+        >
+          <View style={{ flex: 1 }}>
+            <B entry={title} bold style={{ fontSize: 17 }} />
+            {note ? <B entry={note} style={{ color: colors.muted, fontSize: 13, lineHeight: 18 }} /> : null}
+          </View>
+          <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
+        </Pressable>
+        {isOpen ? <View style={{ paddingBottom: 12 }}>{children}</View> : null}
+      </Card>
+    );
+  }
+
+  function DataTable({ table }: { table: TariffTable }) {
+    const first = 150;
+    const col = table.cols.length > 3 ? 104 : 108;
+    return (
+      <Collapse title={table.title} note={table.note} flush>
+        <ScrollView horizontal showsHorizontalScrollIndicator={Platform.OS === 'web'}>
+          <View>
+            <View style={[s.tr, { backgroundColor: colors.paleBlue }]}>
+              <View style={{ width: first, padding: 10 }}><B entry={table.corner} bold style={s.th} /></View>
+              {table.cols.map((c, i) => (
+                <View key={i} style={{ width: col, padding: 10 }}><B entry={c} bold style={[s.th, { textAlign: 'right' }]} /></View>
+              ))}
+            </View>
+            {table.rows.map((row, r) => (
+              <View key={r} style={[s.tr, r % 2 === 1 && { backgroundColor: '#FAFBFD' }]}>
+                <View style={{ width: first, padding: 10 }}><B entry={row.label} style={s.td} /></View>
+                {row.cells.map((cell, i) => (
+                  <View key={i} style={{ width: col, padding: 10 }}><T bold style={[s.td, { textAlign: 'right' }]}>{d(cell)}</T></View>
+                ))}
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </Collapse>
+    );
+  }
+
+  function OfficeCard({ office, tone }: { office: Office; tone?: 'head' }) {
+    return (
+      <Card style={tone === 'head' ? { borderColor: colors.blue, borderWidth: 1.5 } : undefined}>
+        <B entry={office.name} bold style={{ fontSize: 17 }} />
+        {office.head ? <B entry={office.head} style={{ color: colors.muted, marginTop: 2 }} /> : null}
+        <B entry={office.address} style={{ marginTop: 6 }} />
+        <View style={{ marginTop: 8 }}>
+          {office.phones.map((p) => <PhoneRow key={p} number={p} />)}
+          {office.email ? (
+            <Pressable onPress={() => open(`mailto:${office.email}`)} style={s.phoneRow} accessibilityRole="button">
+              <Icon name="mail-outline" size={18} color={colors.blue} />
+              <T style={{ flex: 1 }}>{pick(ui.email, language)}</T>
+              <T bold style={{ color: colors.blue }}>{office.email}</T>
+            </Pressable>
+          ) : null}
+        </View>
+        <View style={s.buttonRow}>
+          <Button small label={pick(ui.call, language)} onPress={() => callNumber(office.phones[office.phones.length > 1 && !office.email ? 1 : 0])} />
+          <Button small kind="outline" label={pick(ui.viewOnMap, language)} onPress={() => open(mapUrl(office.mapQuery))} />
+        </View>
+      </Card>
+    );
+  }
+
+  function ContactCard({ contact }: { contact: Contact }) {
+    const fav = favourites.includes(favKey(contact));
+    const dark = !!contact.dark;
+    return (
+      <View style={[s.contactCard, dark && { backgroundColor: colors.ink }]}>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8 }}>
+          <View style={{ flex: 1 }}>
+            <B entry={contact.name} bold style={{ color: colors.white, fontSize: 17 }} />
+            <B entry={contact.detail} style={{ color: 'rgba(255,255,255,0.82)', fontSize: 14, lineHeight: 20 }} />
+          </View>
+          <Pressable
+            onPress={() => toggleFav(contact)}
+            accessibilityRole="button"
+            accessibilityLabel={pick(fav ? ui.removeFav : ui.addFav, language)}
+            hitSlop={10}
+            style={s.starButton}
+          >
+            <Icon name={fav ? 'star' : 'star-outline'} size={24} color={fav ? '#FFC809' : 'rgba(255,255,255,0.85)'} />
+          </Pressable>
+        </View>
+        <View style={s.contactBottom}>
+          <T bold style={{ color: colors.white, fontSize: 24, lineHeight: 30 }}>{d(contact.number)}</T>
+          <Button small kind="dark" icon="call-outline" label={pick(ui.call, language)} onPress={() => callNumber(contact.number)} />
+        </View>
+      </View>
+    );
+  }
+
+  // ------------------------------------------------------------------ pages
+  const renderHome = () => (
+    <View style={{ gap: 16 }}>
+      <View style={s.hero}>
+        <B entry={ui.services} bold style={s.heroLabel} />
+        <B entry={ui.heroTitle} bold style={s.heroTitle} />
+        <B entry={ui.tagline} style={s.heroSub} />
+      </View>
+      <View style={wide ? { flexDirection: 'row', gap: 16, alignItems: 'stretch' } : { gap: 16 }}>
+      <Pressable onPress={() => (embedded && onReportComplaint ? onReportComplaint() : selectTab('complaint'))} style={[s.reportCard, wide && { flex: 1 }]} accessibilityRole="button" accessibilityLabel={pick(ui.reportTitle, language)}>
+        <View style={s.reportIcon}><Icon name="megaphone-outline" size={24} color={colors.red} /></View>
+        <View style={{ flex: 1 }}>
+          <B entry={ui.reportTitle} bold style={{ fontSize: 17 }} />
+          <B entry={ui.reportBody} style={{ color: colors.muted, fontSize: 14, lineHeight: 20 }} />
+        </View>
+        <Icon name="chevron-forward" size={22} color={colors.blue} />
+      </Pressable>
+      <View style={wide ? { flex: 1 } : undefined}><HelplineStrip /></View>
+      </View>
+      <View>
+        <SectionTitle entry={ui.quickActions} />
+        <View style={[s.grid, { justifyContent: 'center' }]}>
+          {homeTiles.filter((tile) => tile.id === 'faq').map((tile) => (
+            <Pressable key={tile.id} onPress={() => go(tile.id)} style={[s.tile, { flexGrow: 0, flexBasis: wide ? '30%' : '60%', alignItems: 'center' }]} accessibilityRole="button" accessibilityLabel={pick(tile.title, language)}>
+              <View style={s.tileIcon}><Icon name={tile.icon as IconName} size={24} color={colors.blue} /></View>
+              <B entry={tile.title} bold style={{ fontSize: 15, lineHeight: 20, textAlign: 'center' }} />
+              <B entry={tile.hint} style={{ color: colors.muted, fontSize: 13, lineHeight: 18, textAlign: 'center' }} />
+            </Pressable>
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderComplaint = () => (
+    <View style={{ gap: 16 }}>
+      <PageHeaderNoBack title={ui.reportTitle} />
+      <Card>
+        <View style={s.reportIconLarge}><Icon name="megaphone-outline" size={30} color={colors.red} /></View>
+        <B entry={ui.complaintGate} style={{ marginTop: 12 }} />
+        <View style={{ gap: 10, marginTop: 16 }}>
+          <Button label={pick(ui.logIn, language)} onPress={onSignIn} />
+          <Button kind="outline" label={pick(ui.register, language)} onPress={onSignUp} />
+        </View>
+      </Card>
+      <Card>
+        <B entry={ui.complaintWays} />
+        <View style={{ marginTop: 8 }}>
+          <PhoneRow number={HELPLINE} label={ui.helpline} />
+        </View>
+        <View style={{ marginTop: 10 }}>
+          <Button small kind="light" label={pick(ui.offices, language)} onPress={() => go('offices')} />
+        </View>
+      </Card>
+      <HelplineStrip />
+    </View>
+  );
+
+  const PageHeaderNoBack = ({ title, subtitle }: { title: Bi; subtitle?: Bi }) => (
+    <View style={{ gap: 6 }}>
+      <B entry={title} bold style={s.pageTitle} />
+      {subtitle ? <B entry={subtitle} style={{ color: colors.muted }} /> : null}
+    </View>
+  );
+
+  const renderEmergency = () => {
+    const favs = emergencyContacts.filter((c) => favourites.includes(favKey(c)));
+    return (
+      <View style={{ gap: 16 }}>
+        <PageHeaderNoBack title={ui.emergencyTitle} subtitle={ui.oneTap} />
+        {favs.length > 0 ? (
+          <View style={{ gap: 10 }}>
+            <SectionTitle entry={ui.favourites} />
+            {favs.map((c) => <ContactCard key={`fav-${favKey(c)}`} contact={c} />)}
+          </View>
+        ) : null}
+        <View style={wide ? { flexDirection: 'row', flexWrap: 'wrap', gap: 12 } : { gap: 10 }}>
+          {emergencyContacts.map((c) => (
+            <View key={favKey(c)} style={wide ? { flexBasis: '48%', flexGrow: 1 } : undefined}><ContactCard contact={c} /></View>
+          ))}
+        </View>
+        <View>
+          <SectionTitle entry={ui.zoneOffices} />
+          <Card style={{ paddingVertical: 4 }}>
+            {zoneContacts.map((z, i) => (
+              <View key={z.number} style={i > 0 ? s.listDivider : undefined}>
+                <PhoneRow number={z.number} label={z.name} />
+              </View>
+            ))}
+          </Card>
+        </View>
+        <View>
+          <SectionTitle entry={ui.nationalHotlines} />
+          <Card style={{ paddingVertical: 4 }}>
+            {nationalHotlines.map((h, i) => (
+              <View key={h.number} style={i > 0 ? s.listDivider : undefined}>
+                <PhoneRow number={h.number} label={h.name} />
+              </View>
+            ))}
+          </Card>
+        </View>
+      </View>
+    );
+  };
+
+  const renderAbout = () => (
+    <View style={{ gap: 16 }}>
+      <PageHeaderNoBack title={{ en: 'About CWASA', bn: 'চট্টগ্রাম ওয়াসা সম্পর্কে' }} />
+      {aboutSections.map((sec) => (
+        <Card key={sec.title.en}>
+          <B entry={sec.title} bold style={{ fontSize: 17, marginBottom: 6 }} />
+          {sec.body ? <B entry={sec.body} /> : null}
+          {sec.items ? <Bullets items={sec.items} /> : null}
+        </Card>
+      ))}
+      <Card>
+        <B entry={ui.organogram} bold style={{ fontSize: 17, marginBottom: 6 }} />
+        <B entry={ui.downloadOrganogram} />
+        <View style={{ marginTop: 10 }}>
+          <DocRow doc={{ name: ui.organogram, file: 'organogram.pdf' }} />
+        </View>
+      </Card>
+      <SectionTitle entry={ui.appInfo} />
+      <Card>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+          <B entry={ui.version} bold />
+          <T>{d('0.1.0')}</T>
+        </View>
+      </Card>
+      {aboutApp.map((sec) => (
+        <Card key={sec.title.en}>
+          <B entry={sec.title} bold style={{ fontSize: 16, marginBottom: 6 }} />
+          <B entry={sec.body} />
+        </Card>
+      ))}
+      <B entry={ui.disclaimer} style={s.disclaimer} />
+      <Footer />
+    </View>
+  );
+
+  const renderWaterBill = () => (
+    <View style={{ gap: 16 }}>
+      <PageHeader title={ui.waterBill} subtitle={billIntro} />
+      {billSections.map((sec) => (
+        <Collapse key={sec.title.en} title={sec.title}>
+          <Bullets items={sec.items} />
+        </Collapse>
+      ))}
+      <Collapse title={{ en: 'Ways to Pay', bn: 'পরিশোধের মাধ্যম' }}>
+        <View style={{ gap: 16 }}>
+          {payWays.map((way) => (
+            <View key={way.title.en} style={s.payWay}>
+              <B entry={way.title} bold style={{ fontSize: 16 }} />
+              <B entry={way.body} style={{ color: colors.muted, marginTop: 4 }} />
+              <View style={{ marginTop: 10 }}>
+                <Button label={pick(way.label, language)} onPress={() => open(way.url)} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </Collapse>
+      <Pressable onPress={() => go('tariff')} accessibilityRole="link" style={{ alignSelf: 'flex-start' }}>
+        <B entry={ui.seeFullTariff} bold style={{ color: colors.blue }} />
+      </Pressable>
+      <HelplineStrip />
+    </View>
+  );
+
+  const renderTariff = () => (
+    <View style={{ gap: 16 }}>
+      <PageHeader title={ui.tariff} subtitle={ui.effective} />
+      {tariffTables.map((table) => <DataTable key={table.id} table={table} />)}
+      <B entry={ui.disclaimer} style={s.disclaimer} />
+    </View>
+  );
+
+  const renderOffices = () => (
+    <View style={{ gap: 16 }}>
+      <PageHeader title={ui.officeDirectory} />
+      <Card style={{ backgroundColor: colors.paleBlue, borderColor: colors.paleBlue }}>
+        <B entry={ui.officeHours} />
+      </Card>
+      <OfficeCard office={headOffice} tone="head" />
+      {zoneOffices.map((o) => <OfficeCard key={o.name.en} office={o} />)}
+      <SectionTitle entry={ui.keyOfficials} />
+      <Card style={{ paddingVertical: 4 }}>
+        {officials.map((o, i) => (
+          <View key={o.role.en} style={i > 0 ? s.listDivider : undefined}>
+            <PhoneRow number={o.number} label={o.role} />
+          </View>
+        ))}
+      </Card>
+    </View>
+  );
+
+  const renderForms = () => (
+    <View style={{ gap: 16 }}>
+      <PageHeader title={ui.forms} />
+      {formGroups.map((group) => (
+        <View key={group.title.en} style={{ gap: 10 }}>
+          <SectionTitle entry={group.title} />
+          <Card style={{ paddingVertical: 4 }}>
+            {group.items.map((doc, i) => (
+              <View key={doc.file} style={i > 0 ? s.listDivider : undefined}>
+                <DocRow doc={doc} />
+              </View>
+            ))}
+          </Card>
+        </View>
+      ))}
+    </View>
+  );
+
+  const renderFaq = () => <FaqList />;
+
+  function FaqList() {
+    const [openIndex, setOpenIndex] = useState(0);
+    return (
+      <View style={{ gap: 12 }}>
+        <PageHeader title={ui.faqFull} />
+        {faqItems.map((item, i) => {
+          const isOpen = openIndex === i;
+          return (
+            <Card key={i} style={{ paddingVertical: 4 }}>
+              <Pressable
+                onPress={() => setOpenIndex(isOpen ? -1 : i)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: isOpen }}
+                style={s.faqHead}
+              >
+                <View style={s.stepBadge}><T bold style={{ color: colors.white, fontSize: 13, lineHeight: 18 }}>{d(String(i + 1))}</T></View>
+                <B entry={item.q} bold style={{ flex: 1 }} />
+                <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
+              </Pressable>
+              {isOpen ? <B entry={item.a} style={{ paddingBottom: 12, color: colors.muted }} /> : null}
+            </Card>
+          );
+        })}
+      </View>
+    );
+  }
+
+  function ServiceSections({ sections }: { sections: Service['sections'] }) {
+    const [openIds, setOpenIds] = useState<string[]>([]);
+    const toggle = (id: string) => setOpenIds((cur) => (cur.includes(id) ? cur.filter((v) => v !== id) : [...cur, id]));
+    return (
+      <View style={{ gap: 12 }}>
+        {sections.map((sec) => {
+          const isOpen = openIds.includes(sec.title.en);
+          return (
+            <Card key={sec.title.en} style={{ paddingVertical: 4 }}>
+              <Pressable
+                onPress={() => toggle(sec.title.en)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: isOpen }}
+                style={s.faqHead}
+              >
+                <B entry={sec.title} bold style={{ flex: 1, fontSize: 17 }} />
+                <Icon name={isOpen ? 'chevron-up' : 'chevron-down'} size={20} color={colors.muted} />
+              </Pressable>
+              {isOpen ? (
+                <View style={{ paddingBottom: 12 }}>
+                  {sec.items ? <Bullets items={sec.items} /> : null}
+                  {sec.steps ? <Steps items={sec.steps} /> : null}
+                  {sec.text ? <B entry={sec.text} /> : null}
+                </View>
+              ) : null}
+            </Card>
+          );
+        })}
+      </View>
+    );
+  }
+
+  const renderService = (svc: Service) => (
+    <View style={{ gap: 16 }}>
+      <PageHeader title={svc.title} subtitle={svc.subtitle} />
+      <ServiceSections sections={svc.sections} />
+      {svc.showTariff ? (
+        <Button kind="light" label={pick(ui.tariff, language)} onPress={() => go('tariff')} />
+      ) : null}
+      {svc.forms.length > 0 ? (
+        <Card style={{ paddingVertical: 4 }}>
+          {svc.forms.map((doc, i) => (
+            <View key={doc.file} style={i > 0 ? s.listDivider : undefined}>
+              <DocRow doc={doc} />
+            </View>
+          ))}
+        </Card>
+      ) : null}
+      <HelplineStrip />
+    </View>
+  );
+
+  function Footer() {
+    return (
+      <View style={s.footer}>
+        <B entry={ui.partnership} style={{ color: colors.muted, fontSize: 8, lineHeight: 12, textAlign: 'center' }} />
+        <Image source={require('./assets/wateraid-logo.png')} style={s.partnerLogo} resizeMode="contain" />
+        <B entry={ui.sourceNote} style={{ color: colors.muted, fontSize: 6, lineHeight: 12, textAlign: 'center' }} />
+      </View>
+    );
+  }
+
+  const renderRoute = () => {
+    if (route.startsWith('service:')) {
+      const svc = services.find((x) => x.id === route.slice(8));
+      return svc ? renderService(svc) : renderHome();
+    }
+    switch (route) {
+      case 'complaint': return renderComplaint();
+      case 'emergency': return renderEmergency();
+      case 'about': return renderAbout();
+      case 'waterBill': return renderWaterBill();
+      case 'tariff': return renderTariff();
+      case 'offices': return renderOffices();
+      case 'forms': return renderForms();
+      case 'faq': return renderFaq();
+      default: return renderHome();
+    }
+  };
+
+  // ---------------------------------------------------------------- splash
+  if (splash) return <Splash language={language} />;
+
+  const allTabs: { id: Tab; icon: string; label: Bi }[] = [
+    { id: 'home', icon: 'home-outline', label: ui.home },
+    { id: 'complaint', icon: 'chatbox-outline', label: ui.reportComplaint },
+    { id: 'emergency', icon: 'headset-outline', label: ui.emergency },
+    { id: 'about', icon: 'information-circle-outline', label: ui.about },
+  ];
+  // Signed-in customers get one Home tab that returns them to their own interface.
+  const tabs = embedded ? allTabs.slice(0, 1) : allTabs;
+  const menuItems: { id: string; label: Bi }[] = [
+    { id: 'service:new-connection', label: ui.newConnection },
+    { id: 'waterBill', label: ui.waterBill },
+    { id: 'tariff', label: ui.tariff },
+    { id: 'offices', label: ui.offices },
+    { id: 'forms', label: ui.forms },
+    { id: 'faq', label: ui.faq },
+    ...(embedded ? [{ id: 'emergency', label: ui.emergency }, { id: 'about', label: ui.about }] : []),
+  ];
+
+  const navItemsAll: { id: string; tab?: Tab; label: Bi }[] = [
+    { id: 'home', tab: 'home', label: ui.home },
+    { id: 'service:new-connection', label: ui.newConnection },
+    { id: 'waterBill', label: ui.waterBill },
+    { id: 'tariff', label: ui.tariff },
+    { id: 'complaint', tab: 'complaint', label: ui.reportComplaint },
+    { id: 'emergency', tab: 'emergency', label: ui.emergency },
+    { id: 'offices', label: ui.offices },
+  ];
+  const navItems = embedded ? navItemsAll.filter((item) => item.id !== 'complaint') : navItemsAll;
+  const moreItems: { id: string; label: Bi }[] = [
+    { id: 'forms', label: ui.forms },
+    { id: 'faq', label: ui.faq },
+    { id: 'about', label: ui.about },
+  ];
+
+  return (
+    <View style={s.root}>
+      <StatusBar style="dark" />
+      <View style={[s.frame, wide && { maxWidth: 1120 }]}>
+        <View style={[s.topBar, wide && s.topBarWide]}>
+          {!wide ? <Pressable
+            onPress={() => setMenuOpen((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel={pick(ui.menu, language)}
+            accessibilityState={{ expanded: menuOpen }}
+            style={s.iconButton}
+          >
+            <Icon name={menuOpen ? 'close' : 'menu'} size={28} color={colors.ink} />
+          </Pressable> : null}
+          <Pressable onPress={() => selectTab('home')} style={wide ? undefined : { flex: 1 }} accessibilityRole="button" accessibilityLabel={pick(ui.home, language)}>
+            <Image source={require('./assets/cwasa-logo-wide.png')} style={s.logo} resizeMode="contain" />
+          </Pressable>
+          {wide ? (
+            <View style={s.navRow}>
+              {navItems.map((item) => {
+                const current = route === item.id || (item.id === 'home' && route === 'home');
+                return (
+                  <Pressable key={item.id} onPress={() => (embedded && item.id === 'home' && onExit ? onExit() : item.tab ? selectTab(item.tab) : go(item.id))} accessibilityRole="link" style={[s.navLink, current && { backgroundColor: colors.paleBlue }]}>
+                    <T bold={current} style={{ color: current ? colors.blue : colors.ink, fontSize: 14, lineHeight: 20 }} lines={1}>{pick(item.label, language)}</T>
+                  </Pressable>
+                );
+              })}
+              <Pressable onPress={() => setMenuOpen((v) => !v)} accessibilityRole="button" accessibilityState={{ expanded: menuOpen }} style={s.navLink}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                  <T style={{ fontSize: 14, lineHeight: 20 }}>{pick({ en: 'More', bn: 'আরও' }, language)}</T>
+                  <Icon name="chevron-down" size={16} color={colors.ink} />
+                </View>
+              </Pressable>
+            </View>
+          ) : null}
+          {wide ? (
+            <Pressable onPress={() => onLanguageChange(language === 'en' ? 'bn' : 'en')} accessibilityRole="button" accessibilityLabel={pick(ui.language, language)} style={s.langChip}>
+              <T bold style={{ color: colors.blue, fontSize: 13, lineHeight: 18 }}>{language === 'en' ? 'বাংলা' : 'English'}</T>
+            </Pressable>
+          ) : null}
+          {wide && !embedded ? (
+            <Pressable onPress={onSignUp} accessibilityRole="button" accessibilityLabel={pick(ui.register, language)} style={[s.loginPill, { backgroundColor: colors.white, borderWidth: 1.5, borderColor: colors.blue }]}>
+              <T bold style={{ color: colors.blue, fontSize: 14, lineHeight: 20 }}>{pick(ui.register, language)}</T>
+            </Pressable>
+          ) : null}
+          {!embedded ? (
+          <Pressable onPress={onSignIn} accessibilityRole="button" accessibilityLabel={pick(ui.login, language)} style={s.loginPill}>
+            <T bold style={{ color: colors.white, fontSize: 14, lineHeight: 20 }}>{pick(ui.login, language)}</T>
+          </Pressable>
+          ) : <View style={{ width: 44 }} />}
+        </View>
+
+        {menuOpen ? (
+          <>
+            <Pressable style={s.menuBackdrop} onPress={() => setMenuOpen(false)} accessibilityLabel="Close menu" />
+            <View style={[s.menu, wide && { left: undefined, right: 160, top: 70 }]}>
+              {(wide ? moreItems : menuItems).map((item, i) => (
+                <Pressable key={item.id} onPress={() => go(item.id)} style={[s.menuItem, i > 0 && s.listDivider]} accessibilityRole="button">
+                  <B entry={item.label} />
+                </Pressable>
+              ))}
+              {!wide ? <View style={[s.menuItem, s.listDivider, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+                <B entry={ui.language} bold />
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  {(['bn', 'en'] as Language[]).map((code) => (
+                    <Pressable
+                      key={code}
+                      onPress={() => onLanguageChange(code)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: language === code }}
+                      style={[s.langChip, language === code && { backgroundColor: colors.blue, borderColor: colors.blue }]}
+                    >
+                      <T bold style={{ color: language === code ? colors.white : colors.blue, fontSize: 13, lineHeight: 18 }}>{code === 'bn' ? 'বাংলা' : 'English'}</T>
+                    </Pressable>
+                  ))}
+                </View>
+              </View> : null}
+            </View>
+          </>
+        ) : null}
+
+        <ScrollView ref={scroller} style={{ flex: 1 }} contentContainerStyle={[s.content, wide && { padding: 28, paddingBottom: 48 }]} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <View style={wide && route !== 'home' ? { width: '100%', maxWidth: 900, alignSelf: 'center' } : undefined}>{renderRoute()}</View>
+        </ScrollView>
+
+        {!wide ? <View style={s.tabBar}>
+          {tabs.map((tab) => {
+            const active = activeTab === tab.id && (stack.length === 1 || tab.id === 'home' ? activeTab === tab.id : false);
+            const on = activeTab === tab.id;
+            return (
+              <Pressable
+                key={tab.id}
+                onPress={() => (embedded && onExit ? onExit() : selectTab(tab.id))}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: on }}
+                accessibilityLabel={pick(tab.label, language)}
+                style={s.tab}
+              >
+                <View style={[s.tabIcon, (on || active) && { backgroundColor: colors.paleBlue }]}>
+                  <Icon name={tab.icon as IconName} size={22} color={on ? colors.blue : colors.muted} />
+                </View>
+                <T bold={on} style={{ fontSize: 11, lineHeight: 15, color: on ? colors.blue : colors.muted, textAlign: 'center' }} lines={1}>{pick(tab.label, language)}</T>
+              </Pressable>
+            );
+          })}
+        </View> : null}
+      </View>
+    </View>
+  );
+}
+
+// ------------------------------------------------------------------- splash
+function Splash({ language }: { language: Language }) {
+  const dots = useRef([new Animated.Value(0), new Animated.Value(0), new Animated.Value(0)]).current;
+  useEffect(() => {
+    const native = Platform.OS !== 'web';
+    const loops = dots.map((value, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 160),
+          Animated.timing(value, { toValue: 1, duration: 320, useNativeDriver: native }),
+          Animated.timing(value, { toValue: 0, duration: 320, useNativeDriver: native }),
+          Animated.delay((2 - i) * 160),
+        ]),
+      ),
+    );
+    loops.forEach((l) => l.start());
+    return () => loops.forEach((l) => l.stop());
+  }, [dots]);
+
+  const text = (entry: Bi, bold: boolean, style: StyleProp<TextStyle>) => {
+    const value = pick(entry, language);
+    return <Text style={[{ fontFamily: fontFamilyForText(value, bold, language), textAlign: 'center' }, style]}>{value}</Text>;
+  };
+
+  return (
+    <View style={s.splash}>
+      <StatusBar style="dark" />
+      <Image source={require('./assets/cwasa-logo.png')} style={s.splashLogo} resizeMode="contain" />
+      {text(ui.welcomeTo, false, { color: colors.muted, fontSize: 14, letterSpacing: 1.2, marginTop: 24 })}
+      {text(ui.cwasa, true, { color: colors.blue, fontSize: 30, lineHeight: 40, marginTop: 4 })}
+      {text(ui.platform, false, { color: colors.ink, fontSize: 16, marginTop: 4 })}
+      <View style={s.dotsRow} accessibilityLabel="Loading">
+        {dots.map((value, i) => (
+          <Animated.View
+            key={i}
+            style={[
+              s.splashDot,
+              { opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.35, 1] }), transform: [{ translateY: value.interpolate({ inputRange: [0, 1], outputRange: [0, -10] }) }] },
+            ]}
+          />
+        ))}
+      </View>
+    </View>
+  );
+}
+
+const topInset = Platform.OS === 'android' ? (RNStatusBar.currentHeight ?? 24) : Platform.OS === 'ios' ? 50 : 0;
+
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: colors.background, alignItems: 'center' },
+  frame: { flex: 1, width: '100%', maxWidth: 640, backgroundColor: colors.background },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingTop: topInset + 8,
+    paddingBottom: 8,
+    paddingHorizontal: 12,
+    backgroundColor: colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    zIndex: 5,
+  },
+  iconButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
+  logo: { width: 80, height: 20, alignSelf: 'flex-start',marginLeft: -20 },
+  loginPill: { backgroundColor: colors.blue, borderRadius: 20, paddingHorizontal: 20, paddingVertical: 9, minHeight: 40, justifyContent: 'center' },
+  topBarWide: { paddingHorizontal: 24, gap: 12 },
+  navRow: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 2, flexWrap: 'wrap' },
+  navLink: { paddingHorizontal: 10, paddingVertical: 8, borderRadius: 10 },
+  menuBackdrop: { position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, zIndex: 6 },
+  menu: {
+    position: 'absolute',
+    top: topInset + 62,
+    left: 12,
+    width: 280,
+    maxWidth: '90%',
+    backgroundColor: colors.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.border,
+    zIndex: 7,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 6 },
+    overflow: 'hidden',
+  },
+  menuItem: { paddingHorizontal: 16, paddingVertical: 14 },
+  langChip: { borderWidth: 1, borderColor: colors.blue, borderRadius: 16, paddingHorizontal: 12, paddingVertical: 5 },
+  content: { padding: 16, paddingBottom: 28 },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: colors.white,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingTop: 6,
+    paddingBottom: Platform.OS === 'ios' ? 22 : Platform.OS === 'android' ? 10 : 8,
+  },
+  tab: { flex: 1, alignItems: 'center', gap: 2, paddingHorizontal: 2 },
+  tabIcon: { width: 52, height: 30, borderRadius: 15, alignItems: 'center', justifyContent: 'center' },
+  hero: { backgroundColor: colors.blue, borderRadius: 20, padding: 20, gap: 6 },
+  heroLabel: { color: 'rgba(255,255,255,0.85)', fontSize: 13, lineHeight: 18, letterSpacing: 1 },
+  heroTitle: { color: colors.white, fontSize: 24, lineHeight: 32 },
+  heroSub: { color: 'rgba(255,255,255,0.9)', fontSize: 14, lineHeight: 20 },
+  reportCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  reportIcon: { width: 46, height: 46, borderRadius: 14, backgroundColor: colors.paleRed, alignItems: 'center', justifyContent: 'center' },
+  reportIconLarge: { width: 56, height: 56, borderRadius: 16, backgroundColor: colors.paleRed, alignItems: 'center', justifyContent: 'center' },
+  helplineCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.paleBlue,
+    borderRadius: 16,
+    padding: 16,
+  },
+  helplineIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center' },
+  sectionTitle: { fontSize: 18, lineHeight: 26, marginBottom: 10 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
+  tile: {
+    flexGrow: 1,
+    flexBasis: '45%',
+    backgroundColor: colors.white,
+    borderRadius: 16,
+    padding: 14,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tileIcon: { width: 42, height: 42, borderRadius: 12, backgroundColor: colors.paleBlue, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  card: { backgroundColor: colors.white, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border },
+  listRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  listDivider: { borderTopWidth: 1, borderTopColor: colors.border },
+  pageTitle: { fontSize: 24, lineHeight: 32 },
+  backRow: { alignSelf: 'flex-start', paddingVertical: 4 },
+  bulletRow: { flexDirection: 'row', gap: 10, alignItems: 'flex-start' },
+  bulletDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.blue, marginTop: 8 },
+  stepBadge: { width: 24, height: 24, borderRadius: 12, backgroundColor: colors.blue, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
+  button: { minHeight: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 18, borderWidth: 1.5 },
+  buttonSmall: { minHeight: 38, borderRadius: 10, paddingHorizontal: 14 },
+  buttonRow: { flexDirection: 'row', gap: 10, marginTop: 12, flexWrap: 'wrap' },
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 10 },
+  pdfBadge: { backgroundColor: colors.paleRed, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 3 },
+  phoneRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10, minHeight: 44 },
+  tr: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border, alignItems: 'center' },
+  th: { fontSize: 13, lineHeight: 18, color: colors.deepBlue },
+  td: { fontSize: 14, lineHeight: 20 },
+  contactCard: { backgroundColor: colors.blue, borderRadius: 16, padding: 16, gap: 12 },
+  contactBottom: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 10 },
+  starButton: { padding: 2 },
+  faqHead: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12 },
+  payWay: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12 },
+  disclaimer: { color: colors.muted, fontSize: 12, lineHeight: 18, textAlign: 'center' },
+  footer: { alignItems: 'center', gap: 8, paddingVertical: 8 },
+  partnerLogo: { width: 140, height: 32 },
+  splash: { flex: 1, backgroundColor: colors.white, alignItems: 'center', justifyContent: 'center', padding: 32 },
+  splashLogo: { width: 180, height: 90 },
+  dotsRow: { flexDirection: 'row', gap: 12, marginTop: 40, height: 24, alignItems: 'flex-end' },
+  splashDot: { width: 12, height: 12, borderRadius: 6, backgroundColor: colors.blue },
+});
