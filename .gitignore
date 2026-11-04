@@ -6,3 +6,4 @@ npm-debug.log*
 
 # API test credentials
 tests/api/environment.local.json
+config.bat

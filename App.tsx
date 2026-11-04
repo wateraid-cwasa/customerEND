@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ComponentProps, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -12,6 +12,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { StatusBar } from 'expo-status-bar';
@@ -75,6 +76,24 @@ type NotificationItem = {
   icon: string;
   color: string;
 };
+
+const glyphIcons: Record<string, ComponentProps<typeof Ionicons>['name']> = {
+  '৳': 'cash-outline',
+  '◷': 'time-outline',
+  '＋': 'add-circle-outline',
+  '☷': 'chatbox-ellipses-outline',
+  '⌕': 'search-outline',
+  '▤': 'list-outline',
+  '✓': 'checkmark-circle-outline',
+  '!': 'alert-circle-outline',
+  '💧': 'water-outline',
+};
+
+function GlyphIcon({ glyph, color, size = 22 }: { glyph: string; color: string; size?: number }) {
+  const name = glyphIcons[glyph];
+  if (!name) return <Text style={{ color, fontSize: size, fontWeight: '700' }}>{glyph}</Text>;
+  return <Ionicons name={name} size={size} color={color} />;
+}
 
 type Payment = {
   id: string;
@@ -700,7 +719,7 @@ export default function App() {
             hitSlop={8}
             style={{ position: 'absolute', right: 4, top: 0, bottom: 0, width: 40, alignItems: 'center', justifyContent: 'center' }}
           >
-            <Text style={{ fontSize: 18 }}>{revealed ? '🔒' : '👁'}</Text>
+            <Ionicons name={revealed ? 'eye-off-outline' : 'eye-outline'} size={22} color={colors.muted} />
           </Pressable>
         ) : null}
       </View>
@@ -834,7 +853,7 @@ export default function App() {
       <View style={[styles.headerActions, compact && { gap: 6 }]}>
         {authScreen ? null : (
           <Pressable onPress={() => openPublicServices()} style={styles.publicInfoButton} accessibilityLabel={translateGuest(language, 'publicServices')}>
-          <TextLabel style={styles.publicInfoText}>ⓘ</TextLabel>
+          <Ionicons name="information-circle-outline" size={22} color={colors.blue} />
         </Pressable>
         )}
         <Pressable onPress={() => setLanguage((current) => current === 'en' ? 'bn' : 'en')} style={styles.languageButton} accessibilityLabel={t('language')}>
@@ -842,7 +861,7 @@ export default function App() {
         </Pressable>
         {authScreen ? null : (
           <Pressable onPress={() => setScreen('notifications')} style={styles.notificationButton} accessibilityLabel={t('notifications')}>
-          <Text style={styles.notificationIcon}>🔔</Text>
+          <Ionicons name="notifications-outline" size={22} color={colors.blue} />
           {unreadCount > 0 ? <View style={styles.notificationBadge}><Text style={styles.badgeText}>{unreadCount}</Text></View> : null}
         </Pressable>
         )}
@@ -853,13 +872,13 @@ export default function App() {
   const bottomNav = (
     <View style={styles.bottomNav}>
       {([
-        ['home', '𖠿', t('home')],
-        ['history', '◷', t('history')],
-        ['support', '✆', t('support')],
-        ['account', '☻', t('account')],
-      ] as [Screen, string, string][]).map(([target, icon, label]) => (
+        ['home', 'home-outline', t('home')],
+        ['history', 'time-outline', t('history')],
+        ['support', 'headset-outline', t('support')],
+        ['account', 'person-outline', t('account')],
+      ] as [Screen, ComponentProps<typeof Ionicons>['name'], string][]).map(([target, icon, label]) => (
         <Pressable key={target} onPress={() => setScreen(target)} style={styles.navItem} accessibilityRole="tab" accessibilityState={{ selected: screen === target }}>
-          <TextLabel bold style={[styles.navIcon, (screen === target || (target === 'support' && ['complaint-form', 'complaints', 'new-connection', 'application'].includes(screen))) && styles.navSelected]}>{icon}</TextLabel>
+          <Ionicons name={icon} size={24} color={(screen === target || (target === 'support' && ['complaint-form', 'complaints', 'new-connection', 'application'].includes(screen))) ? colors.blue : colors.muted} />
           <TextLabel bold style={[styles.navLabel, (screen === target || (target === 'support' && ['complaint-form', 'complaints', 'new-connection', 'application'].includes(screen))) && styles.navSelected]}>{label}</TextLabel>
         </Pressable>
       ))}
@@ -1077,12 +1096,12 @@ export default function App() {
                 <View style={styles.tileGrid}>
                   {serviceTiles.slice(0, 4).map((tile) => (
                     <Pressable key={tile.title} onPress={() => setScreen(tile.screen)} style={[styles.serviceTile, veryCompact && { width: '48%' }]}>
-                      <View style={[styles.tileIcon, { backgroundColor: `${tile.color}15` }]}><TextLabel bold style={{ color: tile.color, fontSize: 20 }}>{tile.icon}</TextLabel></View>
+                      <View style={[styles.tileIcon, { backgroundColor: `${tile.color}15` }]}><GlyphIcon glyph={tile.icon} color={tile.color} size={24} /></View>
                       <TextLabel style={styles.tileLabel}>{t(tile.title)}</TextLabel>
                     </Pressable>
                   ))}
                   <Pressable onPress={() => setScheduleOpen(true)} style={[styles.serviceTile, veryCompact && { width: '48%' }]}>
-                    <View style={[styles.tileIcon, { backgroundColor: `${colors.blue}15` }]}><TextLabel bold style={{ color: colors.blue, fontSize: 20 }}>💧</TextLabel></View>
+                    <View style={[styles.tileIcon, { backgroundColor: `${colors.blue}15` }]}><GlyphIcon glyph="💧" color={colors.blue} size={24} /></View>
                     <TextLabel style={styles.tileLabel}>{t('waterScheduleShort')}</TextLabel>
                   </Pressable>
                 </View>
@@ -1320,7 +1339,7 @@ export default function App() {
             {notifications.filter((item) => notificationFilter === 'All' || item.category === notificationFilter).map((item) => (
               <Pressable key={item.id} onPress={() => { setNotifications((current) => current.map((entry) => entry.id === item.id ? { ...entry, read: true } : entry)); if (item.category === 'Bills') setScreen('bill'); else if (item.category === 'Service') setScreen('complaints'); else showNotice(item.detail); }}>
                 <Card style={[styles.notificationCard, !item.read && styles.notificationUnread]}>
-                  <View style={[styles.notificationItemIcon, { backgroundColor: `${item.color}17` }]}><TextLabel bold style={{ color: item.color }}>{item.icon}</TextLabel></View>
+                  <View style={[styles.notificationItemIcon, { backgroundColor: `${item.color}17` }]}><GlyphIcon glyph={item.icon} color={item.color} size={20} /></View>
                   <View style={styles.notificationItemContent}><View style={styles.rowBetween}><TextLabel bold>{item.title}</TextLabel></View><TextLabel style={styles.helperText}>{item.detail}</TextLabel></View>
                   {!item.read ? <View style={styles.unreadDot} /> : null}
                 </Card>
@@ -1346,7 +1365,7 @@ export default function App() {
                 ['billQuery', '৳', 'bill'],
               ] as [TranslationKey, string, Screen][]).map(([title, icon, destination], index) => (
                 <Pressable key={title} onPress={() => destination === 'support' ? showNotice(`${t(title)} · ${t('hotline')}: 16129`) : setScreen(destination)} style={styles.catalogTile}>
-                  <View style={[styles.catalogIcon, { backgroundColor: [colors.paleBlue, colors.paleAmber, colors.paleGreen, '#F2EDFF', colors.paleBlue, colors.paleRed][index % 6] }]}><TextLabel bold style={{ color: [colors.blue, colors.amber, colors.green, colors.purple][index % 4], fontSize: 21 }}>{icon}</TextLabel></View>
+                  <View style={[styles.catalogIcon, { backgroundColor: [colors.paleBlue, colors.paleAmber, colors.paleGreen, '#F2EDFF', colors.paleBlue, colors.paleRed][index % 6] }]}><GlyphIcon glyph={icon} color={[colors.blue, colors.amber, colors.green, colors.purple][index % 4]} size={24} /></View>
                   <TextLabel style={styles.catalogLabel}>{t(title)}</TextLabel>
                 </Pressable>
               ))}

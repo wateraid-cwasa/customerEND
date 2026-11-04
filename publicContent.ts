@@ -723,10 +723,10 @@ export const aboutApp: { title: Bi; body: Bi }[] = [
 // Home screen tiles (id is a route)
 export type HomeTile = { id: string; icon: string; title: Bi; hint: Bi };
 export const homeTiles: HomeTile[] = [
-  { id: 'service:new-connection', icon: '🚰', title: ui.newConnection, hint: { en: 'Apply and fees', bn: 'আবেদন ও ফি' } },
-  { id: 'waterBill', icon: '🧾', title: ui.waterBill, hint: { en: 'How to pay', bn: 'পরিশোধের মাধ্যম' } },
-  { id: 'tariff', icon: '৳', title: ui.tariff, hint: { en: 'Rates and fees', bn: 'হার ও ফি' } },
-  { id: 'offices', icon: '🏢', title: ui.offices, hint: { en: 'Zone offices', bn: 'জোন অফিস' } },
-  { id: 'forms', icon: '📄', title: ui.forms, hint: { en: 'PDF downloads', bn: 'পিডিএফ ডাউনলোড' } },
-  { id: 'faq', icon: '❓', title: ui.faq, hint: { en: 'Common questions', bn: 'সচরাচর প্রশ্ন' } },
+  { id: 'service:new-connection', icon: 'water-outline', title: ui.newConnection, hint: { en: 'Apply and fees', bn: 'আবেদন ও ফি' } },
+  { id: 'waterBill', icon: 'receipt-outline', title: ui.waterBill, hint: { en: 'How to pay', bn: 'পরিশোধের মাধ্যম' } },
+  { id: 'tariff', icon: 'cash-outline', title: ui.tariff, hint: { en: 'Rates and fees', bn: 'হার ও ফি' } },
+  { id: 'offices', icon: 'business-outline', title: ui.offices, hint: { en: 'Zone offices', bn: 'জোন অফিস' } },
+  { id: 'forms', icon: 'document-text-outline', title: ui.forms, hint: { en: 'PDF downloads', bn: 'পিডিএফ ডাউনলোড' } },
+  { id: 'faq', icon: 'help-circle-outline', title: ui.faq, hint: { en: 'Common questions', bn: 'সচরাচর প্রশ্ন' } },
 ];
